@@ -590,10 +590,10 @@ export function Fp() {
     clearDanmakuList: () => {},
     reloadConfig: async () => { try { await api?.reloadDanmakuConfig?.() } catch {} return { success: true } },
     /** 启动弹幕会话：官方 Fp.startSession 以位置参数调用，构建 cfg 后交给 electronAPI 模拟 + 订阅事件 + 设置运行时 */
-    startSession: async (shopId?: any, shopName?: any, apiToken?: any, platformCode?: any, storeShopId?: any, storeShopRawData?: any, liveRoomName?: any, orderAlertEnabled?: any, shopCurl?: any, storeShopCurl?: any, authSubject?: any, storeAuthSubject?: any) => {
+    startSession: async (shopId?: any, shopName?: any, apiToken?: any, platformCode?: any, storeShopId?: any, storeShopRawData?: any, liveRoomName?: any, orderAlertEnabled?: any, shopCurl?: any, storeShopCurl?: any, authSubject?: any, storeAuthSubject?: any, roomUrl?: any) => {
       const cfg = typeof shopId === 'object' && shopId !== null
         ? shopId
-        : { shopId, shopName, apiToken, platformCode, storeShopId, storeShopRawData, liveRoomName, orderAlertEnabled, shopCurl, storeShopCurl, authSubject, storeAuthSubject }
+        : { shopId, shopName, apiToken, platformCode, storeShopId, storeShopRawData, liveRoomName, orderAlertEnabled, shopCurl, storeShopCurl, authSubject, storeAuthSubject, roomUrl }
       let started = false
       try { const r = await api?.startDanmakuSession?.(cfg); started = !!r?.success || true } catch {}
       XR()

@@ -13,10 +13,16 @@ const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const { spawn } = require('child_process')
+const { ElectronPrintService } = require('./main/electron-print')
+const { DouyinLiveDriver } = require('./main/douyin-live-driver')
 
 let MOCK_BASE = process.env.KOUDANBAO_URL || ''
 const DEVTOOLS = process.env.KOUDANBAO_DEVTOOLS === '1'
 let backendProcess = null
+
+// M2：真实能力服务（Electron 系统打印 + 抖音弹幕驱动）
+const printService = new ElectronPrintService(path.join(__dirname, 'resources'))
+const douyinDriver = new DouyinLiveDriver()
 
 function authDoneUrl() { return MOCK_BASE + '/__kdb_auth_done' }
 
@@ -427,19 +433,171 @@ function stopDanmakuMock() {
   emit('live:status', { active: false })
 }
 
-// --- 弹幕会话 ---
-ipcMain.handle('danmaku:startSession', async () => { startDanmakuMock(); return { success: true } })
-ipcMain.handle('danmaku:stopSession', async () => { stopDanmakuMock(); return { success: true } })
+// --- 弹幕会话（M2：抖音真实弹幕优先，无直播间地址时回退 mock） ---
+
+/** 抖音直播间地址解析：roomUrl > roomId > storeShopRawData 兜底 */
+function resolveDouyinRoomUrl(params) {
+  const p = params || {}
+  if (typeof p.roomUrl === 'string' && p.roomUrl.trim()) return p.roomUrl.trim()
+  if (typeof p.roomId === 'string' && p.roomId.trim()) return `https://live.douyin.com/${p.roomId.trim()}`
+  if (typeof p.roomId === 'number' && p.roomId > 0) return `https://live.douyin.com/${p.roomId}`
+  const raw = p.storeShopRawData
+  if (raw && typeof raw === 'object') {
+    if (typeof raw.url === 'string' && /live\.douyin\.com/.test(raw.url)) return raw.url
+    if (typeof raw.roomUrl === 'string' && raw.roomUrl.trim()) return raw.roomUrl.trim()
+    if (raw.roomId) return `https://live.douyin.com/${raw.roomId}`
+  }
+  return ''
+}
+
+let douyinDriverWired = false
+function wireDouyinDriverEvents() {
+  if (douyinDriverWired) return
+  douyinDriverWired = true
+  douyinDriver.on('display', (items) => emit('danmaku:display', items))
+  douyinDriver.on('resolved', (items) => emit('danmaku:resolved', items))
+  douyinDriver.on('printResults', (items) => emit('print:results', items))
+  douyinDriver.on('luckyBagBatchReset', (payload) => emit('danmaku:lucky-bag-batch-reset', payload))
+  douyinDriver.on('live-status', (status) => emit('live:status', { platformCode: 'douyin', reportedAt: Date.now(), ...status }))
+  douyinDriver.on('ws-connected', (info) => emit('connection:status', { type: 'connection', status: 'connected', ...info }))
+  douyinDriver.on('ws-closed', () => emit('connection:status', { type: 'connection', status: 'disconnected' }))
+}
+
+// --- 直播间地址记忆 + 弹窗收集（不依赖前端改动） ---
+function roomUrlStorePath() {
+  return path.join(app.getPath('userData'), 'douyin-room-urls.json')
+}
+function loadRoomUrlMap() {
+  try { return JSON.parse(fs.readFileSync(roomUrlStorePath(), 'utf8')) } catch { return {} }
+}
+function saveRoomUrl(shopId, url) {
+  try {
+    const map = loadRoomUrlMap()
+    map[String(shopId)] = url
+    fs.writeFileSync(roomUrlStorePath(), JSON.stringify(map, null, 2), 'utf8')
+  } catch (e) { console.warn('[douyin-driver] 保存直播间地址失败:', e?.message || String(e)) }
+}
+
+/** 弹窗收集抖音直播间地址（data URL 页面 + will-navigate 传值） */
+function promptRoomUrl(shopName) {
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = (url) => {
+      if (settled) return
+      settled = true
+      try { win.destroy() } catch { /* ignore */ }
+      resolve(url || '')
+    }
+    const html = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>抖音直播间地址</title>
+      <style>
+        body { font-family: system-ui, sans-serif; padding: 24px; }
+        h3 { margin: 0 0 12px; font-size: 15px; }
+        p { margin: 0 0 12px; color: #666; font-size: 12px; line-height: 1.6; }
+        input { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+        .row { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+        button { padding: 6px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid #d1d5db; background: #fff; }
+        button.primary { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+      </style></head><body>
+      <h3>接入抖音真实弹幕</h3>
+      <p>请输入要监听弹幕的抖音直播间地址（形如 https://live.douyin.com/123456789），<br/>或直播间房间号。本地址仅保存在本机。</p>
+      <input id="url" placeholder="https://live.douyin.com/ 或 房间号" autofocus />
+      <div class="row"><button onclick="location.href='kdb-room-url://cancel'">取消</button>
+      <button class="primary" onclick="submit()">确定</button></div>
+      <script>
+        function submit() {
+          var v = document.getElementById('url').value.trim();
+          if (!v) return;
+          if (!/^https?:\\/\\//.test(v)) v = 'https://live.douyin.com/' + v;
+          location.href = 'kdb-room-url://' + encodeURIComponent(v);
+        }
+        document.getElementById('url').addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+      </script></body></html>`
+    const win = new BrowserWindow({
+      width: 520,
+      height: 300,
+      title: `抖音直播间地址（${shopName || '扣单宝'}）`,
+      resizable: false,
+      webPreferences: { nodeIntegration: false, contextIsolation: true },
+    })
+    win.webContents.on('will-navigate', (_event, targetUrl) => {
+      if (targetUrl.startsWith('kdb-room-url://')) {
+        _event.preventDefault()
+        const raw = targetUrl.slice('kdb-room-url://'.length)
+        finish(raw === 'cancel' ? '' : decodeURIComponent(raw))
+      }
+    })
+    win.on('closed', () => finish(''))
+    win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html))
+  })
+}
+
+ipcMain.handle('danmaku:startSession', async (_e, params) => {
+  const p = params || {}
+  const isDouyin = !p.platformCode || p.platformCode === 'douyin'
+  if (isDouyin) {
+    let roomUrl = resolveDouyinRoomUrl(p)
+    if (!roomUrl) {
+      const remembered = loadRoomUrlMap()[String(p.shopId)] || loadRoomUrlMap().default
+      if (remembered) roomUrl = remembered
+    }
+    if (!roomUrl) {
+      // 首次使用：弹窗收集直播间地址并记忆（不依赖前端改动）
+      roomUrl = await promptRoomUrl(p.shopName || '抖音直播间')
+      if (roomUrl) saveRoomUrl(p.shopId, roomUrl)
+    }
+    if (roomUrl) {
+      try {
+        wireDouyinDriverEvents()
+        await douyinDriver.startCapture({ shopId: p.shopId, roomUrl })
+        await douyinDriver.startDanmakuSession({
+          shopId: p.shopId,
+          shopName: p.shopName || '',
+          apiToken: p.apiToken || '',
+          device: {
+            deviceId: p.deviceId,
+            deviceName: p.deviceName,
+            appVersion: p.appVersion,
+            clientPlatform: p.clientPlatform,
+          },
+        })
+        emit('live:status', { active: true, platformCode: 'douyin', shopId: p.shopId })
+        emit('connection:status', { type: 'connection', status: 'connected' })
+        return { success: true, real: true }
+      } catch (err) {
+        return { success: false, error: err?.message || String(err) }
+      }
+    }
+    // 用户取消输入 → 回退 mock 并提示
+    startDanmakuMock()
+    emit('live:status', { active: true })
+    return { success: true, mock: true, warning: '未提供直播间地址，已使用模拟弹幕。' }
+  }
+  // 非抖音平台（淘宝/小红书/视频号）暂用 mock
+  startDanmakuMock()
+  emit('live:status', { active: true })
+  return { success: true, mock: true }
+})
+ipcMain.handle('danmaku:stopSession', async () => {
+  douyinDriver.stop()
+  stopDanmakuMock()
+  emit('live:status', { active: false })
+  return { success: true }
+})
 ipcMain.handle('danmaku:resetBatch', async () => ({ success: true }))
 ipcMain.handle('danmaku:resetLuckyBagBatch', async () => {
   emit('danmaku:lucky-bag-batch-reset', { success: true })
   return { success: true }
 })
 ipcMain.handle('danmaku:setPaused', async (_e, p) => {
-  if (p && p.paused) stopDanmakuMock(); else startDanmakuMock()
+  const paused = !!(p && p.paused)
+  douyinDriver.setPaused(paused)
+  if (paused) stopDanmakuMock(); else startDanmakuMock()
   return { success: true }
 })
-ipcMain.handle('danmaku:reloadConfig', async () => ({ success: true }))
+ipcMain.handle('danmaku:reloadConfig', async () => {
+  await douyinDriver.reloadConfig().catch(() => {})
+  return { success: true }
+})
 
 // --- 订单同步 / 备注 / 身份解析 ---
 ipcMain.handle('orders:sync', async () => ({ success: true, status: 'success', count: 0, syncedOrders: [], message: '本地mock：无真实订单' }))
@@ -483,11 +641,17 @@ ipcMain.handle('shop:status', async (_e, p) => ({ success: true, data: { status:
 ipcMain.handle('shop:bootstrap', async () => ({ success: true, data: {} }))
 ipcMain.handle('shop:deauthorize', async () => { emit('shop:status-changed', { success: true }); return { success: true } })
 
-// --- 打印 ---
-ipcMain.handle('printer:diagnose', async () => ({ success: true, data: { status: 'ok', printers: [] } }))
-ipcMain.handle('electron-print:get-printers', async () => ({ success: true, printers: [], data: [] }))
-ipcMain.handle('electron-print:print-labels', async () => ({ success: true, printed: true }))
-ipcMain.handle('electron-print:diagnose', async () => ({ success: true, data: { status: 'ok' } }))
+// --- 打印（M2：真实 Electron 系统打印服务） ---
+ipcMain.handle('printer:diagnose', async () => {
+  const d = await printService.diagnose()
+  return { success: d.available, data: d }
+})
+ipcMain.handle('electron-print:get-printers', async () => {
+  const printers = await printService.getPrinters()
+  return { success: true, printers, data: printers }
+})
+ipcMain.handle('electron-print:print-labels', async (_e, payload) => printService.printLabels(payload || {}))
+ipcMain.handle('electron-print:diagnose', async () => printService.diagnose())
 ipcMain.handle('electron-print:get-settings', async () => ({ success: true, settings: { closeBehavior: 'tray', askOnClose: true, printProvider: 'electron' } }))
 ipcMain.handle('electron-print:update-settings', async (_e, s) => ({ success: true, settings: s }))
 
@@ -510,6 +674,33 @@ setInterval(() => {
 
 app.whenReady().then(async () => {
   await ensureBackend()
+  if (process.env.KDB_SMOKE_TEST === '1') {
+    // 冒烟自检：打印服务诊断 + 页面加载（验证主进程真实能力装配）
+    const diagnose = await printService.diagnose()
+    const printers = await printService.getPrinters().catch(() => [])
+    createMainWindow()
+    mainWindow.webContents.on('did-finish-load', () => {
+      console.log('[smoke] page loaded:', mainWindow.webContents.getURL())
+      console.log('[smoke] print diagnose:', JSON.stringify(diagnose))
+      console.log('[smoke] printers:', JSON.stringify(printers.map((p) => p.name)))
+      console.log('[smoke] douyin driver api:', JSON.stringify({
+        startCapture: typeof douyinDriver.startCapture,
+        startDanmakuSession: typeof douyinDriver.startDanmakuSession,
+        stop: typeof douyinDriver.stop,
+        wired: douyinDriverWired,
+      }))
+      app.exit(0)
+    })
+    mainWindow.webContents.on('did-fail-load', (_e, code, desc) => {
+      console.error('[smoke] page load failed:', code, desc)
+      app.exit(1)
+    })
+    setTimeout(() => {
+      console.error('[smoke] timeout')
+      app.exit(1)
+    }, 30000)
+    return
+  }
   createMainWindow()
   // 自测模式（环境变量触发）：打开平台登录窗口并截图，验证登录驱动可用
   if (process.env.KDB_TEST_LOGIN) {
@@ -546,6 +737,7 @@ app.whenReady().then(async () => {
 })
 
 app.on('before-quit', () => {
+  douyinDriver.stop()
   stopBackend()
 })
 

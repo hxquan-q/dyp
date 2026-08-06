@@ -114,7 +114,7 @@ const baseParams = { baseUrl: 'http://127.0.0.1:8787/', apiToken: 'tok', shopId:
   // ---- 7. mock 后端契约核查：server-live-sync 响应与主进程期望的 snake_case 契约是否一致 ----
   {
     const fs = require('fs');
-    const srv = fs.readFileSync(path.join(__dirname, '..', 'backend', 'server.py'), 'utf8');
+    const srv = fs.readFileSync(path.join(__dirname, '..', 'legacy', 'backend-python', 'server.py'), 'utf8');
     t(srv.includes('/api/electron/orders/server-sync'), `mock 后端已实现 server-sync 路由分支`);
     t(srv.includes('server-live-sync'), `mock 后端已提到 server-live-sync`);
     // 主进程 liveServerOrderSync 期望 snake_case（synced_orders/has_more/lock_skipped）

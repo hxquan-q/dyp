@@ -61,7 +61,7 @@ for (const f of ['xhs-live-capture.js', 'xhs-order-sync-capture.js']) {
 }
 
 // ── 3. 主进程结构 marker ──
-const main = fs.readFileSync(path.join(__dirname, '..', 'electron', 'main', 'index.js'), 'utf-8')
+const main = fs.readFileSync(path.join(__dirname, '..', 'legacy', 'main-process-reverse', 'index.js'), 'utf-8')
 for (const marker of ['douyin', 'taobao', 'xiaohongshu', 'channels', 'wxstore', 'jinritemai',
                       'flushMatchedBuffer', 'matchSingleRule', 'matchGridRule', 'preMatchRules',
                       'pigeon', 'server-sync', 'live-sync']) {
