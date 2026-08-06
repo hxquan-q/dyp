@@ -9,22 +9,22 @@
 //!   仅 printItems 要求命中；item 带 index/is_simulated/simulated/lucky_bag_won。
 //! - danmaku/process：未命中直接跳过（主进程只回传命中消息）；item 无 index/simulated。
 
-use crate::domain::{build_deduction_rules, merged_deduction_config, as_s};
+use crate::domain::{as_s, build_deduction_rules, merged_deduction_config};
 use crate::engine::DeductionEngine;
 use crate::inertia::live_config_payload;
 use crate::state::AppState;
 use crate::store::{self, log_print_items};
 use crate::util::{expire_iso, now_iso};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// 解析原始 path 的 query（/api/electron/live-config?shop_id=x）
 fn query_param(raw_path: &str, key: &str) -> String {
     if let Some(q) = raw_path.split_once('?').map(|(_, q)| q) {
         for pair in q.split('&') {
-            if let Some((k, v)) = pair.split_once('=') {
-                if k == key {
-                    return crate::util::percent_decode(&v.replace('+', " "));
-                }
+            if let Some((k, v)) = pair.split_once('=')
+                && k == key
+            {
+                return crate::util::percent_decode(&v.replace('+', " "));
             }
         }
     }
@@ -78,7 +78,11 @@ fn simulate_messages(
         seq += 1;
         let content = as_s(msg.get("content").unwrap_or(&Value::Null));
         let nickname = as_s(msg.get("nickname").unwrap_or(&Value::Null));
-        let nickname = if nickname.is_empty() { format!("模拟用户{seq}") } else { nickname };
+        let nickname = if nickname.is_empty() {
+            format!("模拟用户{seq}")
+        } else {
+            nickname
+        };
         let raw_comment_id = as_s(msg.get("comment_id").unwrap_or(&Value::Null));
         let comment_id = if raw_comment_id.is_empty() {
             format!("sim-{seq}")
@@ -103,8 +107,16 @@ fn simulate_messages(
                 .or_else(|| msg.get("batchNo"))
                 .unwrap_or(&Value::Null),
         );
-        let batch_no = if batch_no.is_empty() { "MOCKBATCH".to_string() } else { batch_no };
-        let status = if matched_content.is_some() { "matched" } else { "processed" };
+        let batch_no = if batch_no.is_empty() {
+            "MOCKBATCH".to_string()
+        } else {
+            batch_no
+        };
+        let status = if matched_content.is_some() {
+            "matched"
+        } else {
+            "processed"
+        };
         let item = json!({
             "id": comment_id,
             "comment_id": comment_id,
@@ -221,12 +233,7 @@ fn process_messages(
 }
 
 /// Python `_electron_api` 移植。raw_path 保留 query（live-config 需解析 shop_id）。
-pub fn electron_api(
-    state: &AppState,
-    raw_path: &str,
-    body: &[u8],
-    sess: &mut Value,
-) -> Value {
+pub fn electron_api(state: &AppState, raw_path: &str, body: &[u8], sess: &mut Value) -> Value {
     let path = raw_path.split('?').next().unwrap_or(raw_path).to_string();
     let payload: Value = serde_json::from_slice(body).unwrap_or_else(|_| json!({}));
 
@@ -234,7 +241,10 @@ pub fn electron_api(
         return json!({"success": true, "data": {"update_available": false}});
     }
 
-    if path.contains("orders/sync") || path.contains("server-sync") || path.contains("server-live-sync") {
+    if path.contains("orders/sync")
+        || path.contains("server-sync")
+        || path.contains("server-live-sync")
+    {
         // P0-2 修复：snake_case 全字段契约（对齐主进程 liveServerOrderSync 期望）
         let orders = state.mock_order_list(sess, 1, 50);
         let order_list = orders.get("list").cloned().unwrap_or_else(|| json!([]));
@@ -285,9 +295,20 @@ pub fn electron_api(
     }
 
     if path.contains("danmaku/simulate") {
-        let shop_id = as_s(payload.get("shop_id").or_else(|| payload.get("shopId")).unwrap_or(&Value::Null));
-        let messages = payload.get("messages").cloned().unwrap_or_else(|| json!([]));
-        let ctx = payload.get("simulation_context").cloned().unwrap_or_else(|| json!([]));
+        let shop_id = as_s(
+            payload
+                .get("shop_id")
+                .or_else(|| payload.get("shopId"))
+                .unwrap_or(&Value::Null),
+        );
+        let messages = payload
+            .get("messages")
+            .cloned()
+            .unwrap_or_else(|| json!([]));
+        let ctx = payload
+            .get("simulation_context")
+            .cloned()
+            .unwrap_or_else(|| json!([]));
         let (mut display_items, print_items) = simulate_messages(state, &shop_id, &messages);
         if display_items.is_empty() {
             // 兜底：无 messages 时用 simulation_context 生成占位
@@ -330,8 +351,16 @@ pub fn electron_api(
     }
 
     if path.contains("danmaku/process") || path.contains("danmaku/reprint") {
-        let shop_id = as_s(payload.get("shop_id").or_else(|| payload.get("shopId")).unwrap_or(&Value::Null));
-        let messages = payload.get("messages").cloned().unwrap_or_else(|| json!([]));
+        let shop_id = as_s(
+            payload
+                .get("shop_id")
+                .or_else(|| payload.get("shopId"))
+                .unwrap_or(&Value::Null),
+        );
+        let messages = payload
+            .get("messages")
+            .cloned()
+            .unwrap_or_else(|| json!([]));
         let (outcomes, print_items) = process_messages(state, sess, &shop_id, &messages);
         log_print_items(state, &print_items);
         return json!({

@@ -1,0 +1,9 @@
+dist
+node_modules
+src/lib/preset-templates.json
+
+# M4续 拆分目标：逆向重建的超长行大文件（拆分时重写，新模块即符合 prettier）
+src/Pages/Deduction/Index.tsx
+src/Pages/Deduction/Shops.tsx
+src/Pages/Deduction/Notes.tsx
+src/lib/reverse-runtime.ts

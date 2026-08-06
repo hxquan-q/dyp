@@ -5,35 +5,41 @@ use crate::domain::{as_s, platform_name};
 use crate::state::AppState;
 use crate::store;
 use crate::util::{now_iso, now_ms};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 
 pub fn next_shop_id(sess: &mut Value) -> i64 {
-    let seq = sess.get("shop_seq").and_then(|v| v.as_i64()).unwrap_or(1000) + 1;
-    sess.as_object_mut().map(|o| o.insert("shop_seq".into(), json!(seq)));
+    let seq = sess
+        .get("shop_seq")
+        .and_then(|v| v.as_i64())
+        .unwrap_or(1000)
+        + 1;
+    sess.as_object_mut()
+        .map(|o| o.insert("shop_seq".into(), json!(seq)));
     seq
 }
 
 /// Python `_shop_has_live_cap`
 fn shop_has_live_cap(shop: &Value) -> bool {
-    if let Some(scope) = shop.get("authorization_scope") {
-        if let Some(step_keys) = scope.get("stepKeys").and_then(|v| v.as_array()) {
-            if !step_keys.is_empty() {
-                return step_keys.iter().any(|k| k.as_str() == Some("live"));
-            }
-        }
+    if let Some(scope) = shop.get("authorization_scope")
+        && let Some(step_keys) = scope.get("stepKeys").and_then(|v| v.as_array())
+        && !step_keys.is_empty()
+    {
+        return step_keys.iter().any(|k| k.as_str() == Some("live"));
     }
-    matches!(shop.get("platform_code").and_then(|v| v.as_str()), Some("douyin") | Some("douyin_talent"))
+    matches!(
+        shop.get("platform_code").and_then(|v| v.as_str()),
+        Some("douyin") | Some("douyin_talent")
+    )
 }
 
 /// Python `_shop_has_store_cap`
 fn shop_has_store_cap(shop: &Value) -> bool {
-    if let Some(scope) = shop.get("authorization_scope") {
-        if let Some(step_keys) = scope.get("stepKeys").and_then(|v| v.as_array()) {
-            if !step_keys.is_empty() {
-                return step_keys.iter().any(|k| k.as_str() == Some("store"));
-            }
-        }
+    if let Some(scope) = shop.get("authorization_scope")
+        && let Some(step_keys) = scope.get("stepKeys").and_then(|v| v.as_array())
+        && !step_keys.is_empty()
+    {
+        return step_keys.iter().any(|k| k.as_str() == Some("store"));
     }
     true
 }
@@ -57,7 +63,11 @@ pub fn make_shop_record(
 ) -> Value {
     let sid = existing_id.unwrap_or_else(|| next_shop_id(sess));
     let code = platform_code.trim().to_string();
-    let code = if code.is_empty() { "douyin".to_string() } else { code };
+    let code = if code.is_empty() {
+        "douyin".to_string()
+    } else {
+        code
+    };
     let name = shop_name
         .filter(|s| !s.is_empty())
         .or_else(|| live_room_name.clone().filter(|s| !s.is_empty()))
@@ -72,12 +82,12 @@ pub fn make_shop_record(
         let has_live_id = live_id.as_deref().map(|s| !s.is_empty()).unwrap_or(false);
         if has_live_id {
             auth_subj = "live_room".to_string();
-        } else if let Some(scope) = &authorization_scope {
-            if let Some(step_keys) = scope.get("stepKeys").and_then(|v| v.as_array()) {
-                let steps: Vec<&str> = step_keys.iter().filter_map(|k| k.as_str()).collect();
-                if steps.contains(&"live") && !steps.contains(&"store") {
-                    auth_subj = "live_room".to_string();
-                }
+        } else if let Some(scope) = &authorization_scope
+            && let Some(step_keys) = scope.get("stepKeys").and_then(|v| v.as_array())
+        {
+            let steps: Vec<&str> = step_keys.iter().filter_map(|k| k.as_str()).collect();
+            if steps.contains(&"live") && !steps.contains(&"store") {
+                auth_subj = "live_room".to_string();
             }
         }
     }
@@ -148,7 +158,8 @@ pub fn upsert_shop(state: &AppState, sess: &mut Value, shop: Value) -> Value {
             break;
         }
         // same platform + platform_shop_id → merge
-        let same_platform = s.get("platform_code").and_then(|v| v.as_str()) == shop.get("platform_code").and_then(|v| v.as_str());
+        let same_platform = s.get("platform_code").and_then(|v| v.as_str())
+            == shop.get("platform_code").and_then(|v| v.as_str());
         let s_psid = as_s(s.get("platform_shop_id").unwrap_or(&Value::Null));
         let shop_psid = as_s(shop.get("platform_shop_id").unwrap_or(&Value::Null));
         if same_platform && !s_psid.is_empty() && s_psid == shop_psid {
@@ -170,25 +181,46 @@ pub fn upsert_shop(state: &AppState, sess: &mut Value, shop: Value) -> Value {
     if !found {
         new_shops.push(shop);
     }
-    sess.as_object_mut().map(|o| o.insert("shops".into(), json!(new_shops)));
+    sess.as_object_mut()
+        .map(|o| o.insert("shops".into(), json!(new_shops)));
     let shop_seq = sess.get("shop_seq").cloned().unwrap_or(json!(1000));
     // 持久化（store_set 内部加锁 + 落盘）
-    store::store_set(state, "shops", sess.get("shops").cloned().unwrap_or_else(|| json!([])));
+    store::store_set(
+        state,
+        "shops",
+        sess.get("shops").cloned().unwrap_or_else(|| json!([])),
+    );
     store::store_set(state, "shop_seq", shop_seq);
     result
 }
 
 /// Python `shop_display_row`
 pub fn shop_display_row(shop: &Value) -> Value {
-    let cap_live = if shop_has_live_cap(shop) { "ready" } else { "pending" };
-    let cap_order = if shop_has_store_cap(shop) { "ready" } else { "pending" };
+    let cap_live = if shop_has_live_cap(shop) {
+        "ready"
+    } else {
+        "pending"
+    };
+    let cap_order = if shop_has_store_cap(shop) {
+        "ready"
+    } else {
+        "pending"
+    };
     let cap_remark = cap_order;
     let sid = shop.get("id").and_then(|v| v.as_i64()).unwrap_or(0);
     let code = as_s(shop.get("platform_code").unwrap_or(&Value::Null));
     let auth_subj = as_s(shop.get("auth_subject").unwrap_or(&Value::Null));
-    let auth_subj = if auth_subj.is_empty() { "live_room".to_string() } else { auth_subj };
+    let auth_subj = if auth_subj.is_empty() {
+        "live_room".to_string()
+    } else {
+        auth_subj
+    };
     let is_order = auth_subj == "order_shop";
-    let plabel = if code.is_empty() { "-".to_string() } else { platform_name(&code) };
+    let plabel = if code.is_empty() {
+        "-".to_string()
+    } else {
+        platform_name(&code)
+    };
     let live_name = shop
         .get("live_room_name")
         .and_then(|v| v.as_str())
@@ -284,7 +316,11 @@ pub fn build_shop_rows(shops: &[Value]) -> Value {
     for r in rows {
         let mut row = r;
         let is_order = row.get("auth_subject").and_then(|v| v.as_str()) == Some("order_shop");
-        let options = if is_order { json!([]) } else { json!(order_rows) };
+        let options = if is_order {
+            json!([])
+        } else {
+            json!(order_rows)
+        };
         if let Some(obj) = row.as_object_mut() {
             obj.insert("store_options".into(), options);
         }
@@ -319,15 +355,17 @@ pub fn extract_shop_fields_from_payload(payload: &Value) -> Value {
         .or_else(|| meta.get("authPayload"))
         .cloned()
         .unwrap_or_else(|| json!({}));
-    let auth_payload = if auth_payload.is_object() { auth_payload } else { json!({}) };
+    let auth_payload = if auth_payload.is_object() {
+        auth_payload
+    } else {
+        json!({})
+    };
 
     let first_non_null = |candidates: &[Option<&Value>]| -> Option<Value> {
-        for c in candidates {
-            if let Some(v) = c {
-                let s = as_s(v);
-                if !s.is_empty() {
-                    return Some(Value::String(s));
-                }
+        for v in candidates.iter().flatten() {
+            let s = as_s(v);
+            if !s.is_empty() {
+                return Some(Value::String(s));
             }
         }
         None
@@ -420,7 +458,11 @@ pub fn shop_api_payload(state: &AppState, shop: &Value, sess: Option<&Value>) ->
         "message": "ok",
     });
     if let Some(sess) = sess {
-        let shops = sess.get("shops").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+        let shops = sess
+            .get("shops")
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default();
         let rows = build_shop_rows(&shops);
         if let Some(data) = out.get_mut("data").and_then(|d| d.as_object_mut()) {
             data.insert("shops".into(), rows);
@@ -432,7 +474,11 @@ pub fn shop_api_payload(state: &AppState, shop: &Value, sess: Option<&Value>) ->
 
 /// Python `/shops` GET JSON 响应（dashboard io）
 pub fn shops_dashboard_payload(sess: &Value) -> Value {
-    let shops = sess.get("shops").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+    let shops = sess
+        .get("shops")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
     let rows = build_shop_rows(&shops);
     let rows_arr = rows.as_array().cloned().unwrap_or_default();
     let dash_rows: Vec<Value> = rows_arr
@@ -458,7 +504,11 @@ pub fn shops_dashboard_payload(sess: &Value) -> Value {
 
 /// 供 handlers 使用的 /shops/list 响应
 pub fn shops_list_payload(sess: &Value) -> Value {
-    let shops = sess.get("shops").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+    let shops = sess
+        .get("shops")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
     let rows = build_shop_rows(&shops);
     json!({
         "success": true,
@@ -479,7 +529,8 @@ pub fn remove_shop(sess: &mut Value, shop_id: i64) -> bool {
         .filter(|s| s.get("id").and_then(|v| v.as_i64()).unwrap_or(0) != shop_id)
         .collect();
     let removed = kept.len() != before;
-    sess.as_object_mut().map(|o| o.insert("shops".into(), json!(kept)));
+    sess.as_object_mut()
+        .map(|o| o.insert("shops".into(), json!(kept)));
     removed
 }
 
@@ -501,7 +552,8 @@ pub fn set_oauth_state(sess: &mut Value, state: &str, value: Value) {
             Value::Object(m2)
         })
         .unwrap_or_else(|| json!({state: value}));
-    sess.as_object_mut().map(|o| o.insert("oauth_states".into(), states));
+    sess.as_object_mut()
+        .map(|o| o.insert("oauth_states".into(), states));
 }
 
 pub fn pop_oauth_state(sess: &mut Value, state: &str) {

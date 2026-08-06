@@ -77,10 +77,13 @@ E:\dyp\
 ```powershell
 npm install                     # 三处依赖（root/frontend-src/electron）
 npm test                        # 全量：typecheck + 后端协议 + 引擎 + JS 逻辑
+npm run lint                    # 前端 oxlint（0 error 门禁；重建惯用法为 warn，M4续清理）
+npm run format:check            # 前端 prettier 基线（4 个 M4续大文件豁免，见 frontend-src/.prettierignore）
 npm run build:frontend          # vite build → frontend-src/dist
 npm run build:backend           # node scripts/build-backend.mjs → cargo release + 资源打包（跨平台）
 npm run package                 # 前端 + 后端 + electron-builder 打包
 cd backend-rs; cargo test       # Rust 21 项单测
+cd backend-rs; cargo clippy --all-targets   # 0 警告（P0 已清零，新增代码保持）
 python tests/test_backend_protocol.py http://127.0.0.1:8787   # 69 项协议测试（语言无关）
 python tests/test-engine-parity.py <py_url> <rust_url>        # 引擎差分 432 项
 ```
@@ -137,6 +140,12 @@ backend-dist\koudanbao-backend.exe --host 127.0.0.1 --port 8787   # Rust 版（�
   sync_failures/failed_count/has_more/lock_skipped）。
 - **P2-9** 运行时字节补丁 → 构建期 `tools/patch-bundle.js`。
 - **P1-3** 后端模块化（handlers/electron/engine/shops/templates/store...）。
+- **P0 工程质量基线**：`cargo clippy --all-targets` 0 警告（7 处手动修复：clamp/map→if let/死分支收敛）；
+  CI 流水线加入 `npm test`（69 协议 + 432 golden + 引擎/调度/JS + Vitest 13）与
+  `lint`/`format:check` 步骤；前端 lint 基线 = **oxlint**（TS7 原生编译器无 JS API，
+  typescript-eslint 8.x 不兼容 → 弃 ESLint 选 oxlint）+ prettier（4 个 M4续大文件豁免）。
+  协议测试/golden 在 clippy 改动后验证 0 差异；测试套件对 `legacy/` 归档做"缺归档即跳过"
+  （CI checkout 无 legacy/，本地全量照跑）。
 
 ### ⏳ 待办（按依赖序）
 1. **B1** 契约源 + TS 类型生成（P2-7，根治字段漂移；auth.mode 契约为 M5a 已固化雏形）。

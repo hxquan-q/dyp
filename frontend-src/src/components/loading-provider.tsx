@@ -1,38 +1,36 @@
-import * as React from 'react'
-import { cn } from '@/lib/utils'
+import * as React from 'react';
+import { cn } from '@/lib/utils';
 
 interface LoadingContextValue {
-  showLoading: () => void
-  hideLoading: () => void
+  showLoading: () => void;
+  hideLoading: () => void;
 }
 
-const LoadingContext = React.createContext<LoadingContextValue | null>(null)
+const LoadingContext = React.createContext<LoadingContextValue | null>(null);
 
-let counter = 0
+let counter = 0;
 
 export function LoadingProvider({ children }: { children: React.ReactNode }) {
-  const [loading, setLoading] = React.useState(false)
+  const [loading, setLoading] = React.useState(false);
 
   const showLoading = React.useCallback(() => {
-    counter += 1
-    if (counter === 1) setLoading(true)
-  }, [])
+    counter += 1;
+    if (counter === 1) setLoading(true);
+  }, []);
 
   const hideLoading = React.useCallback(() => {
-    counter = Math.max(0, counter - 1)
-    if (counter === 0) setLoading(false)
-  }, [])
+    counter = Math.max(0, counter - 1);
+    if (counter === 0) setLoading(false);
+  }, []);
 
-  const value = React.useMemo(() => ({ showLoading, hideLoading }), [showLoading, hideLoading])
+  const value = React.useMemo(() => ({ showLoading, hideLoading }), [showLoading, hideLoading]);
 
   return (
     <LoadingContext.Provider value={value}>
       {children}
       {loading && (
         <div
-          className={cn(
-            'fixed inset-0 z-[9999] flex items-center justify-center bg-black/20'
-          )}
+          className={cn('fixed inset-0 z-[9999] flex items-center justify-center bg-black/20')}
           role="status"
           aria-live="polite"
         >
@@ -43,11 +41,11 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
         </div>
       )}
     </LoadingContext.Provider>
-  )
+  );
 }
 
 export function useLoading() {
-  const ctx = React.useContext(LoadingContext)
-  if (!ctx) throw new Error('useLoading must be used within LoadingProvider')
-  return ctx
+  const ctx = React.useContext(LoadingContext);
+  if (!ctx) throw new Error('useLoading must be used within LoadingProvider');
+  return ctx;
 }

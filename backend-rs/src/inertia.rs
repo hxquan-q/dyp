@@ -9,7 +9,7 @@ use crate::state::AppState;
 use crate::store;
 use crate::templates;
 use crate::util::{compact_json, expire_iso, html_escape, now_iso, script_data};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 
 /// Python `page()`
@@ -63,21 +63,13 @@ pub fn build_page_for(
 ) -> Value {
     let authed = sess.get("user").map(|u| !u.is_null()).unwrap_or(false);
     let mut path = path.to_string();
-    // force login gate only when AUTO_LOGIN is off
-    if state.auto_login {
-        if (path == "/login" || path == "/register") && authed {
-            path = "/dashboard".to_string();
-        }
-        if path != "/login" && path != "/register" && path != "/password/reset" && !authed {
-            path = "/login".to_string();
-        }
-    } else {
-        if (path == "/login" || path == "/register") && authed {
-            path = "/dashboard".to_string();
-        }
-        if path != "/login" && path != "/register" && path != "/password/reset" && !authed {
-            path = "/login".to_string();
-        }
+    // 登录门：未登录跳 /login；已登录访问 /login|/register 跳 /dashboard
+    // （auto_login 的零门槛由 session 自动注入 user 实现，见 main.rs）
+    if (path == "/login" || path == "/register") && authed {
+        path = "/dashboard".to_string();
+    }
+    if path != "/login" && path != "/register" && path != "/password/reset" && !authed {
+        path = "/login".to_string();
     }
 
     let component = if is_edit_template(path.as_str()) {
@@ -94,10 +86,17 @@ pub fn build_page_for(
     match component.as_str() {
         "Auth/Login" | "Auth/Register" => {}
         "Deduction/Index" => {
-            let shops = sess.get("shops").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+            let shops = sess
+                .get("shops")
+                .and_then(|v| v.as_array())
+                .cloned()
+                .unwrap_or_default();
             let rows = build_shop_rows(&shops);
             let rows_arr = rows.as_array().cloned().unwrap_or_default();
-            let active_id = rows_arr.first().and_then(|r| r.get("id").cloned()).unwrap_or(Value::Null);
+            let active_id = rows_arr
+                .first()
+                .and_then(|r| r.get("id").cloned())
+                .unwrap_or(Value::Null);
             let p = props.as_object_mut().unwrap();
             p.insert("subscriptionSummary".into(), subscription_summary());
             p.insert("shops".into(), json!(shops));
@@ -106,13 +105,20 @@ pub fn build_page_for(
             p.insert("activeDashboardRowId".into(), active_id);
         }
         "Deduction/Shops" => {
-            let shops = sess.get("shops").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+            let shops = sess
+                .get("shops")
+                .and_then(|v| v.as_array())
+                .cloned()
+                .unwrap_or_default();
             let rows = build_shop_rows(&shops);
             let user = sess.get("user").cloned().unwrap_or_else(|| json!({}));
             let p = props.as_object_mut().unwrap();
             p.insert("shops".into(), json!(shops));
             p.insert("shopDisplayRows".into(), rows);
-            p.insert("platforms".into(), Value::Array(crate::domain::platforms().to_vec()));
+            p.insert(
+                "platforms".into(),
+                Value::Array(crate::domain::platforms().to_vec()),
+            );
             p.insert(
                 "accountInfo".into(),
                 json!({"name": user.get("name"), "phone": user.get("phone")}),
@@ -121,7 +127,10 @@ pub fn build_page_for(
         }
         "Settings/Devices" => {
             let p = props.as_object_mut().unwrap();
-            p.insert("devices".into(), sess.get("devices").cloned().unwrap_or_else(|| json!([])));
+            p.insert(
+                "devices".into(),
+                sess.get("devices").cloned().unwrap_or_else(|| json!([])),
+            );
             p.insert("deviceLimit".into(), json!(99));
         }
         "Settings/OrderSubscriptions" => {
@@ -161,7 +170,10 @@ pub fn build_page_for(
                     "can_continue_payment": false,
                 }));
             }
-            props.as_object_mut().unwrap().insert("subscriptions".into(), json!(subs));
+            props
+                .as_object_mut()
+                .unwrap()
+                .insert("subscriptions".into(), json!(subs));
         }
         "Settings/PaymentConfirm" => {
             let qs_plan = query
@@ -213,7 +225,8 @@ pub fn build_page_for(
                 // 直接访问未带 out_trade_no：给一个默认已支付订单
                 order = Some(state.create_payment_order("enterprise", "wechat"));
                 if let Some(o) = order.as_mut() {
-                    o.as_object_mut().map(|m| m.insert("status".into(), json!(1)));
+                    o.as_object_mut()
+                        .map(|m| m.insert("status".into(), json!(1)));
                 }
             }
             let order = order.unwrap();
@@ -231,7 +244,10 @@ pub fn build_page_for(
         }
         "Deduction/Notes" => {
             let p = props.as_object_mut().unwrap();
-            p.insert("apiToken".into(), sess.get("api_token").cloned().unwrap_or(Value::Null));
+            p.insert(
+                "apiToken".into(),
+                sess.get("api_token").cloned().unwrap_or(Value::Null),
+            );
             p.insert("subscriptionSummary".into(), subscription_summary());
         }
         "Deduction/PrintLog" => {
@@ -257,7 +273,10 @@ pub fn build_page_for(
         }
         "Deduction/Template" => {
             let tpls = templates::ensure_templates(&state.assets_dir, sess);
-            let flash = props.get("flash").cloned().unwrap_or_else(|| json!({"success": Value::Null, "error": Value::Null}));
+            let flash = props
+                .get("flash")
+                .cloned()
+                .unwrap_or_else(|| json!({"success": Value::Null, "error": Value::Null}));
             let p = props.as_object_mut().unwrap();
             p.insert("templates".into(), tpls);
             p.insert("flash".into(), flash);
@@ -265,12 +284,15 @@ pub fn build_page_for(
         "Deduction/EditTemplate" => {
             // /tag-templates/create or /tag-templates/{id}/edit
             let mut tpl = None;
-            if let Some(id_str) = extract_edit_template_id(path.as_str()) {
-                if let Ok(tid) = id_str.parse::<i64>() {
-                    let tpls = templates::ensure_templates(&state.assets_dir, sess);
-                    if let Some(arr) = tpls.as_array() {
-                        tpl = arr.iter().find(|t| t.get("id").and_then(|v| v.as_i64()) == Some(tid)).cloned();
-                    }
+            if let Some(id_str) = extract_edit_template_id(path.as_str())
+                && let Ok(tid) = id_str.parse::<i64>()
+            {
+                let tpls = templates::ensure_templates(&state.assets_dir, sess);
+                if let Some(arr) = tpls.as_array() {
+                    tpl = arr
+                        .iter()
+                        .find(|t| t.get("id").and_then(|v| v.as_i64()) == Some(tid))
+                        .cloned();
                 }
             }
             let auth = props.get("auth").cloned().unwrap_or(Value::Null);
@@ -297,7 +319,9 @@ fn extract_edit_template_id(path: &str) -> Option<&str> {
 
 /// Python `only_props`：Inertia partial reload 过滤 props
 pub fn only_props(full: &Value, only_header: Option<&str>) -> Value {
-    let Some(only) = only_header else { return full.clone() };
+    let Some(only) = only_header else {
+        return full.clone();
+    };
     let keys: Vec<String> = only
         .split(',')
         .map(|s| s.trim().to_string())
@@ -312,15 +336,16 @@ pub fn only_props(full: &Value, only_header: Option<&str>) -> Value {
         }
         // always keep errors/flash lightly
         for k in ["errors", "flash", "csrfToken"] {
-            if let Some(v) = src.get(k) {
-                if !props.contains_key(k) {
-                    props.insert(k.to_string(), v.clone());
-                }
+            if let Some(v) = src.get(k)
+                && !props.contains_key(k)
+            {
+                props.insert(k.to_string(), v.clone());
             }
         }
     }
     let mut out = full.clone();
-    out.as_object_mut().map(|o| o.insert("props".into(), Value::Object(props)));
+    out.as_object_mut()
+        .map(|o| o.insert("props".into(), Value::Object(props)));
     out
 }
 

@@ -8,6 +8,8 @@
   "scripts": {
     "build:frontend": "npm --prefix frontend-src run build",
     "typecheck": "npm --prefix frontend-src run typecheck",
+    "lint": "npm --prefix frontend-src run lint",
+    "format:check": "npm --prefix frontend-src run format:check",
     "test:backend": "powershell -ExecutionPolicy Bypass -File scripts/test-backend-protocol.ps1",
     "test:engine": "python tests/test_deduction_engine.py",
     "test:dispatcher": "node tests/test-danmaku-dispatcher.js",

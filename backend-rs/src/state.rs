@@ -7,7 +7,7 @@
 
 use crate::store::load_store;
 use crate::util;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Mutex, OnceLock};
@@ -44,21 +44,29 @@ impl AppState {
         }
         if !frozen {
             // 开发模式：backend/ 目录本身（保留 global-store.json）
-            return std::env::current_dir()
-                .unwrap_or_else(|_| PathBuf::from("."));
+            return std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
         }
-        if cfg!(windows) {
-            if let Some(appdata) = std::env::var_os("APPDATA") {
-                return PathBuf::from(appdata).join("Koudanbao");
-            }
+        if cfg!(windows)
+            && let Some(appdata) = std::env::var_os("APPDATA")
+        {
+            return PathBuf::from(appdata).join("Koudanbao");
         }
         if let Some(xdg) = std::env::var_os("XDG_DATA_HOME") {
             return PathBuf::from(xdg).join("koudanbao");
         }
-        PathBuf::from(".").join(".local").join("share").join("koudanbao")
+        PathBuf::from(".")
+            .join(".local")
+            .join("share")
+            .join("koudanbao")
     }
 
-    pub fn new(data_dir: PathBuf, assets_dir: PathBuf, static_dir: PathBuf, auto_login: bool, auth_mode: String) -> Self {
+    pub fn new(
+        data_dir: PathBuf,
+        assets_dir: PathBuf,
+        static_dir: PathBuf,
+        auto_login: bool,
+        auth_mode: String,
+    ) -> Self {
         let store_path = data_dir.join("global-store.json");
         let store = load_store(&store_path);
         let logger = crate::log::Logger::init(&data_dir);
@@ -107,12 +115,14 @@ impl AppState {
     /// 返回 (sid, 会话克隆)。auto 时自动登录。
     pub fn ensure_session(&self, sid0: Option<&str>, auto: bool) -> (String, Value) {
         let mut guard = self.sessions.lock().expect("sessions poisoned");
-        if let Some(sid) = sid0 {
-            if let Some(sess) = guard.get(sid) {
-                return (sid.to_string(), sess.clone());
-            }
+        if let Some(sid) = sid0
+            && let Some(sess) = guard.get(sid)
+        {
+            return (sid.to_string(), sess.clone());
         }
-        let new_sid = sid0.map(|s| s.to_string()).unwrap_or_else(|| util::token_urlsafe(32));
+        let new_sid = sid0
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| util::token_urlsafe(32));
         let sess = if auto {
             json!({
                 "user": crate::domain::fake_user("13800000000"),
@@ -148,27 +158,48 @@ impl AppState {
     pub fn sync_session_from_store(&self, sess: &mut Value) {
         let gstore = self.store.lock().expect("store poisoned").clone();
         let g_shops = gstore.get("shops").cloned().unwrap_or_else(|| json!([]));
-        let g_templates = gstore.get("templates").cloned().unwrap_or_else(|| json!([]));
+        let g_templates = gstore
+            .get("templates")
+            .cloned()
+            .unwrap_or_else(|| json!([]));
         let g_shop_seq = gstore.get("shop_seq").and_then(|v| v.as_i64()).unwrap_or(0);
-        let g_template_seq = gstore.get("template_seq").and_then(|v| v.as_i64()).unwrap_or(0);
+        let g_template_seq = gstore
+            .get("template_seq")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0);
 
-        let s_shops = sess.get("shops").and_then(|v| v.as_array()).map(|a| a.len()).unwrap_or(0);
+        let s_shops = sess
+            .get("shops")
+            .and_then(|v| v.as_array())
+            .map(|a| a.len())
+            .unwrap_or(0);
         let g_shops_len = g_shops.as_array().map(|a| a.len()).unwrap_or(0);
         if g_shops_len > s_shops {
-            sess.as_object_mut().map(|o| o.insert("shops".into(), g_shops));
+            sess.as_object_mut()
+                .map(|o| o.insert("shops".into(), g_shops));
         }
         let s_seq = sess.get("shop_seq").and_then(|v| v.as_i64()).unwrap_or(0);
         if g_shop_seq > s_seq {
-            sess.as_object_mut().map(|o| o.insert("shop_seq".into(), json!(g_shop_seq)));
+            sess.as_object_mut()
+                .map(|o| o.insert("shop_seq".into(), json!(g_shop_seq)));
         }
-        let s_tpl = sess.get("templates").and_then(|v| v.as_array()).map(|a| a.len()).unwrap_or(0);
+        let s_tpl = sess
+            .get("templates")
+            .and_then(|v| v.as_array())
+            .map(|a| a.len())
+            .unwrap_or(0);
         let g_tpl_len = g_templates.as_array().map(|a| a.len()).unwrap_or(0);
         if g_tpl_len > s_tpl {
-            sess.as_object_mut().map(|o| o.insert("templates".into(), g_templates));
+            sess.as_object_mut()
+                .map(|o| o.insert("templates".into(), g_templates));
         }
-        let s_tseq = sess.get("template_seq").and_then(|v| v.as_i64()).unwrap_or(0);
+        let s_tseq = sess
+            .get("template_seq")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0);
         if g_template_seq > s_tseq {
-            sess.as_object_mut().map(|o| o.insert("template_seq".into(), json!(g_template_seq)));
+            sess.as_object_mut()
+                .map(|o| o.insert("template_seq".into(), json!(g_template_seq)));
         }
     }
 
@@ -246,7 +277,10 @@ impl AppState {
             .iter()
             .find(|p| p["plan_code"].as_str() == Some(plan_code))
             .unwrap_or_else(|| &plans[plans.len() - 1]);
-        let out_trade_no = format!("KD{}", uuid::Uuid::new_v4().simple().to_string()[..18].to_uppercase());
+        let out_trade_no = format!(
+            "KD{}",
+            uuid::Uuid::new_v4().simple().to_string()[..18].to_uppercase()
+        );
         let pay_method = if payment_method == "wechat" { 5 } else { 1 };
         let order = json!({
             "id": self.next_payment_id(),
@@ -303,7 +337,11 @@ impl AppState {
 
     /// Python `_mock_order_list`：Notes 样例订单
     pub fn mock_order_list(&self, sess: &Value, page_no: i64, per_page: i64) -> Value {
-        let shops = sess.get("shops").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+        let shops = sess
+            .get("shops")
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default();
         let shop0 = shops.first().cloned().unwrap_or_else(|| json!({}));
         let shop_id = shop0.get("id").cloned();
         let shop_name = shop0
@@ -313,7 +351,7 @@ impl AppState {
             .unwrap_or("抖音店铺")
             .to_string();
         let store_shop = json!({"id": shop_id, "shop_name": shop_name});
-        let orders = vec![
+        let orders = [
             json!({
                 "id": 1, "order_no": "DY20260801001", "shop_order_id": "DY20260801001",
                 "order_owner_shop_id": shop_id, "store_shop": store_shop,
@@ -349,6 +387,9 @@ impl AppState {
 
     /// Python `_create_payment_order` 后用于 build_page_for 的订单查找
     pub fn payment_order(&self, out_no: &str) -> Option<Value> {
-        self.payment_orders.lock().ok().and_then(|g| g.get(out_no).cloned())
+        self.payment_orders
+            .lock()
+            .ok()
+            .and_then(|g| g.get(out_no).cloned())
     }
 }

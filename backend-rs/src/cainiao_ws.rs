@@ -1,7 +1,7 @@
 //! 菜鸟打印组件 WebSocket mock（对齐 mock_cainiao_ws.py，监听 127.0.0.1:13528）。
 
 use futures_util::{SinkExt, StreamExt};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::net::SocketAddr;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::accept_async;
@@ -44,14 +44,20 @@ async fn handle_connection(stream: TcpStream, _peer: SocketAddr) {
     while let Some(Ok(msg)) = receiver.next().await {
         let text = match msg {
             tokio_tungstenite::tungstenite::Message::Text(t) => t.to_string(),
-            tokio_tungstenite::tungstenite::Message::Binary(b) => String::from_utf8_lossy(&b).to_string(),
+            tokio_tungstenite::tungstenite::Message::Binary(b) => {
+                String::from_utf8_lossy(&b).to_string()
+            }
             tokio_tungstenite::tungstenite::Message::Close(_) => break,
             _ => continue,
         };
         let req: Value = serde_json::from_str(&text).unwrap_or_else(|_| json!({}));
         let resp = response_for(&req);
         let out = serde_json::to_string(&resp).unwrap_or_else(|_| "{}".into());
-        if sender.send(tokio_tungstenite::tungstenite::Message::Text(out.into())).await.is_err() {
+        if sender
+            .send(tokio_tungstenite::tungstenite::Message::Text(out.into()))
+            .await
+            .is_err()
+        {
             break;
         }
     }
@@ -68,12 +74,7 @@ pub async fn run() {
         }
     };
     println!("[mock-cainiao] WebSocket listening ws://{addr}");
-    loop {
-        match listener.accept().await {
-            Ok((stream, peer)) => {
-                tokio::spawn(handle_connection(stream, peer));
-            }
-            Err(_) => break,
-        }
+    while let Ok((stream, peer)) = listener.accept().await {
+        tokio::spawn(handle_connection(stream, peer));
     }
 }

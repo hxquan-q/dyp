@@ -1,13 +1,13 @@
-import * as React from 'react'
-import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { X } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+import * as React from 'react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
-const Dialog = DialogPrimitive.Root
-const DialogTrigger = DialogPrimitive.Trigger
-const DialogPortal = DialogPrimitive.Portal
-const DialogClose = DialogPrimitive.Close
+const Dialog = DialogPrimitive.Root;
+const DialogTrigger = DialogPrimitive.Trigger;
+const DialogPortal = DialogPrimitive.Portal;
+const DialogClose = DialogPrimitive.Close;
 
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
@@ -17,12 +17,12 @@ const DialogOverlay = React.forwardRef<
     ref={ref}
     className={cn(
       'fixed inset-0 z-50 bg-black/40 data-[state=open]:animate-in data-[state=closed]:animate-out',
-      className
+      className,
     )}
     {...props}
   />
-))
-DialogOverlay.displayName = 'DialogOverlay'
+));
+DialogOverlay.displayName = 'DialogOverlay';
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
@@ -34,7 +34,7 @@ const DialogContent = React.forwardRef<
       ref={ref}
       className={cn(
         'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-gray-200 bg-white p-6 shadow-lg duration-200 rounded-lg',
-        className
+        className,
       )}
       {...props}
     >
@@ -44,13 +44,13 @@ const DialogContent = React.forwardRef<
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPortal>
-))
-DialogContent.displayName = 'DialogContent'
+));
+DialogContent.displayName = 'DialogContent';
 
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn('flex flex-col space-y-1.5 text-left', className)} {...props} />
-)
-DialogHeader.displayName = 'DialogHeader'
+);
+DialogHeader.displayName = 'DialogHeader';
 
 const DialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
@@ -61,21 +61,28 @@ const DialogTitle = React.forwardRef<
     className={cn('text-lg font-semibold leading-none tracking-tight', className)}
     {...props}
   />
-))
-DialogTitle.displayName = 'DialogTitle'
+));
+DialogTitle.displayName = 'DialogTitle';
 
 const DialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Description ref={ref} className={cn('text-sm text-gray-500', className)} {...props} />
-))
-DialogDescription.displayName = 'DialogDescription'
+  <DialogPrimitive.Description
+    ref={ref}
+    className={cn('text-sm text-gray-500', className)}
+    {...props}
+  />
+));
+DialogDescription.displayName = 'DialogDescription';
 
 const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-2', className)} {...props} />
-)
-DialogFooter.displayName = 'DialogFooter'
+  <div
+    className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-2', className)}
+    {...props}
+  />
+);
+DialogFooter.displayName = 'DialogFooter';
 
 /** 反转版弹窗底部按钮栏（对齐官方 LT 组件） */
 export function DialogActions({
@@ -85,11 +92,11 @@ export function DialogActions({
   submitText = '确定',
   submitLoadingText = '提交中...',
 }: {
-  onCancel: () => void
-  onSubmit: () => void
-  submitting?: boolean
-  submitText?: string
-  submitLoadingText?: string
+  onCancel: () => void;
+  onSubmit: () => void;
+  submitting?: boolean;
+  submitText?: string;
+  submitLoadingText?: string;
 }) {
   return (
     <div className="flex justify-end gap-3 border-t pt-4">
@@ -100,7 +107,7 @@ export function DialogActions({
         {submitting ? submitLoadingText : submitText}
       </Button>
     </div>
-  )
+  );
 }
 
 export {
@@ -112,4 +119,4 @@ export {
   DialogDescription,
   DialogClose,
   DialogFooter,
-}
+};

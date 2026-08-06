@@ -1,6 +1,6 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
@@ -18,10 +18,10 @@ export default defineConfig({
         entryFileNames: 'assets/app-Buzwood0.js',
         chunkFileNames: 'assets/[name].js',
         assetFileNames: (info) => {
-          if (info.name?.endsWith('.css')) return 'assets/app-CVK6h-fN.css'
-          return 'assets/[name][extname]'
+          if (info.name?.endsWith('.css')) return 'assets/app-CVK6h-fN.css';
+          return 'assets/[name][extname]';
         },
       },
     },
   },
-})
+});

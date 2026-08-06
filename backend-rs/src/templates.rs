@@ -1,7 +1,7 @@
 //! 打印模板域逻辑（对齐 server.py 的 ensure_templates 与 default_print_template）。
 
 use crate::domain::{default_print_template, load_official_default_fields};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::path::Path;
 
 /// Python `ensure_templates`：保证模板列表存在，并迁移坏模板（string id / 缺布局键）
@@ -12,10 +12,13 @@ pub fn ensure_templates(res_dir: &Path, sess: &mut Value) -> Value {
         .map(|a| !a.is_empty())
         .unwrap_or(false);
     if !has_templates {
-        sess.as_object_mut().map(|o| {
-            o.insert("templates".into(), json!([default_print_template(res_dir, 1)]));
+        if let Some(o) = sess.as_object_mut() {
+            o.insert(
+                "templates".into(),
+                json!([default_print_template(res_dir, 1)]),
+            );
             o.insert("template_seq".into(), json!(1));
-        });
+        }
         return sess.get("templates").cloned().unwrap_or_else(|| json!([]));
     }
 
@@ -33,7 +36,11 @@ pub fn ensure_templates(res_dir: &Path, sess: &mut Value) -> Value {
             let tid = tpl.get("id").and_then(|v| v.as_i64()).unwrap_or(1);
             let mut nt = default_print_template(res_dir, tid);
             if let Some(obj) = nt.as_object_mut() {
-                if let Some(name) = tpl.get("name").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
+                if let Some(name) = tpl
+                    .get("name")
+                    .and_then(|v| v.as_str())
+                    .filter(|s| !s.is_empty())
+                {
                     obj.insert("name".into(), json!(name));
                 }
                 if let Some(is_default) = tpl.get("is_default").and_then(|v| v.as_bool()) {
@@ -50,7 +57,8 @@ pub fn ensure_templates(res_dir: &Path, sess: &mut Value) -> Value {
         }
     }
     if changed {
-        sess.as_object_mut().map(|o| o.insert("templates".into(), json!(fixed)));
+        sess.as_object_mut()
+            .map(|o| o.insert("templates".into(), json!(fixed)));
     }
     sess.get("templates").cloned().unwrap_or_else(|| json!([]))
 }
@@ -66,9 +74,7 @@ fn template_is_broken(tpl: &Value) -> bool {
         if arr.is_empty() {
             bad = true;
         } else if let Some(sample) = arr.first() {
-            if !sample.is_object() {
-                bad = true;
-            } else if sample.get("id").is_none() {
+            if !sample.is_object() || sample.get("id").is_none() {
                 bad = true;
             } else if sample.get("id").and_then(|v| v.as_str()).is_some() {
                 bad = true; // 旧 mock 用 string id

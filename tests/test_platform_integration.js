@@ -60,12 +60,17 @@ for (const f of ['xhs-live-capture.js', 'xhs-order-sync-capture.js']) {
   check(`${f} 含业务数据字段`, hasData)
 }
 
-// ── 3. 主进程结构 marker ──
-const main = fs.readFileSync(path.join(__dirname, '..', 'legacy', 'main-process-reverse', 'index.js'), 'utf-8')
-for (const marker of ['douyin', 'taobao', 'xiaohongshu', 'channels', 'wxstore', 'jinritemai',
-                      'flushMatchedBuffer', 'matchSingleRule', 'matchGridRule', 'preMatchRules',
-                      'pigeon', 'server-sync', 'live-sync']) {
-  check(`主进程含 ${marker}`, main.includes(marker))
+// ── 3. 主进程结构 marker（原版还原 bundle 归档在 legacy/，CI 未检出时跳过）──
+const legacyMain = path.join(__dirname, '..', 'legacy', 'main-process-reverse', 'index.js')
+if (!fs.existsSync(legacyMain)) {
+  console.log('  SKIP 主进程结构 marker：legacy/main-process-reverse/index.js 未检出')
+} else {
+  const main = fs.readFileSync(legacyMain, 'utf-8')
+  for (const marker of ['douyin', 'taobao', 'xiaohongshu', 'channels', 'wxstore', 'jinritemai',
+                        'flushMatchedBuffer', 'matchSingleRule', 'matchGridRule', 'preMatchRules',
+                        'pigeon', 'server-sync', 'live-sync']) {
+    check(`主进程含 ${marker}`, main.includes(marker))
+  }
 }
 
 console.log(`\n=== 真实平台集成逻辑测试: ${pass} 通过, ${fail} 失败 ===`)

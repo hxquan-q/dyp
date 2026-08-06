@@ -2,7 +2,7 @@
 //! fake_user / fake_tenant / electron_device / subscription_summary / 默认打印模板）。
 
 use crate::util::{expire_iso, now_iso};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
@@ -68,7 +68,10 @@ pub fn component_for_path() -> &'static HashMap<String, &'static str> {
         m.insert("/shops".into(), "Deduction/Shops");
         m.insert("/settings/devices".into(), "Settings/Devices");
         m.insert("/settings/client".into(), "Settings/ClientSettings");
-        m.insert("/settings/order-subscriptions".into(), "Settings/OrderSubscriptions");
+        m.insert(
+            "/settings/order-subscriptions".into(),
+            "Settings/OrderSubscriptions",
+        );
         m.insert("/order/confirm".into(), "Settings/PaymentConfirm");
         m.insert("/payment/create".into(), "Settings/PaymentConfirm");
         m.insert("/payment/plans".into(), "Settings/OrderSubscriptions");
@@ -170,17 +173,17 @@ pub fn default_deduction_config() -> Value {
 /// Python `_merged_deduction_config`：缺失/空字段回退默认
 pub fn merged_deduction_config(cfg: &Value) -> Value {
     let mut d = default_deduction_config();
-    if let Some(obj) = cfg.as_object() {
-        if !obj.is_empty() {
-            for (k, v) in obj {
-                let fallback = d.get(k).cloned().unwrap_or(Value::Null);
-                let val = if v.is_null() || v.as_str().map(|s| s.is_empty()).unwrap_or(false) {
-                    fallback
-                } else {
-                    v.clone()
-                };
-                d.as_object_mut().unwrap().insert(k.clone(), val);
-            }
+    if let Some(obj) = cfg.as_object()
+        && !obj.is_empty()
+    {
+        for (k, v) in obj {
+            let fallback = d.get(k).cloned().unwrap_or(Value::Null);
+            let val = if v.is_null() || v.as_str().map(|s| s.is_empty()).unwrap_or(false) {
+                fallback
+            } else {
+                v.clone()
+            };
+            d.as_object_mut().unwrap().insert(k.clone(), val);
         }
     }
     d
@@ -237,7 +240,8 @@ pub fn as_s_opt(v: &Value) -> Option<String> {
 }
 
 pub fn as_i64(v: &Value) -> Option<i64> {
-    v.as_i64().or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+    v.as_i64()
+        .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
 }
 
 pub fn as_bool(v: &Value) -> Option<bool> {
@@ -251,16 +255,13 @@ pub fn as_bool(v: &Value) -> Option<bool> {
 /// Python `_load_official_default_fields`：读取 default_custom_config.json（资源目录）
 pub fn load_official_default_fields(assets_or_res_dir: &std::path::Path) -> Value {
     let p = assets_or_res_dir.join("default_custom_config.json");
-    if p.is_file() {
-        if let Ok(text) = std::fs::read_to_string(&p) {
-            if let Ok(data) = serde_json::from_str::<Value>(&text) {
-                if let Some(arr) = data.as_array() {
-                    if !arr.is_empty() {
-                        return data;
-                    }
-                }
-            }
-        }
+    if p.is_file()
+        && let Ok(text) = std::fs::read_to_string(&p)
+        && let Ok(data) = serde_json::from_str::<Value>(&text)
+        && let Some(arr) = data.as_array()
+        && !arr.is_empty()
+    {
+        return data;
     }
     // minimal fallback matching official schema
     json!([

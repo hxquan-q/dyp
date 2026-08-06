@@ -116,7 +116,7 @@ impl DeductionEngine {
                     .get("keywords")
                     .and_then(|k| k.as_array())
                     .and_then(|arr| arr.first())
-                    .map(|v| as_s(v))
+                    .map(as_s)
                     .filter(|s| !s.is_empty());
                 match keyword {
                     Some(kw) if text == kw => (Some(text.to_string()), None),
@@ -128,7 +128,7 @@ impl DeductionEngine {
                     .get("keywords")
                     .and_then(|k| k.as_array())
                     .and_then(|arr| arr.get(2))
-                    .map(|v| as_s(v))
+                    .map(as_s)
                     .filter(|s| !s.is_empty());
                 match keyword {
                     Some(kw) => {
@@ -152,9 +152,15 @@ impl DeductionEngine {
     // ---- 宫格 ----
 
     fn match_grid_rule(&mut self, rule: &Value, content: &str) -> (Option<String>, Option<i64>) {
-        let formats = normalize_formats(rule.get("gridFormats").unwrap_or(&Value::Null), &["pureNumber".to_string()]);
+        let formats = normalize_formats(
+            rule.get("gridFormats").unwrap_or(&Value::Null),
+            &["pureNumber".to_string()],
+        );
         let grid_count = rule.get("gridCount").and_then(|v| v.as_i64()).unwrap_or(12);
-        let grid_auto_assign = rule.get("gridAutoAssign").and_then(|v| v.as_bool()).unwrap_or(false);
+        let grid_auto_assign = rule
+            .get("gridAutoAssign")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
 
         for fmt in formats {
             // 宫格强制不含小数（JS: force_no_decimal=true）
@@ -171,17 +177,21 @@ impl DeductionEngine {
                     None => return (None, None),
                 }
             }
-            if let Ok(grid_value) = number.parse::<i64>() {
-                if (1..=grid_count).contains(&grid_value) {
-                    return (Some(grid_value.to_string()), Some(grid_value));
-                }
+            if let Ok(grid_value) = number.parse::<i64>()
+                && (1..=grid_count).contains(&grid_value)
+            {
+                return (Some(grid_value.to_string()), Some(grid_value));
             }
         }
         (None, None)
     }
 
-    fn resolve_auto_assigned_grid_no(&mut self, number_string: &str, grid_count: i64) -> Option<i64> {
-        let max_grids = 1i64.max(grid_count.max(1).min(50));
+    fn resolve_auto_assigned_grid_no(
+        &mut self,
+        number_string: &str,
+        grid_count: i64,
+    ) -> Option<i64> {
+        let max_grids = grid_count.clamp(1, 50);
         if let Some(existing) = self.auto_assign.get(number_string) {
             return Some(*existing);
         }
@@ -195,8 +205,15 @@ impl DeductionEngine {
 
     // ---- 自定义组合 ----
 
-    fn match_custom_combined_rule(&mut self, rule: &Value, content: &str) -> (Option<String>, Option<i64>) {
-        let formats = normalize_formats(rule.get("customFormats").unwrap_or(&Value::Null), &["includeNumber".to_string()]);
+    fn match_custom_combined_rule(
+        &mut self,
+        rule: &Value,
+        content: &str,
+    ) -> (Option<String>, Option<i64>) {
+        let formats = normalize_formats(
+            rule.get("customFormats").unwrap_or(&Value::Null),
+            &["includeNumber".to_string()],
+        );
         for fmt in formats {
             let number = match self.match_format(content, &fmt, rule, false) {
                 Some(n) => n,
@@ -310,9 +327,13 @@ impl DeductionEngine {
             "numberWithKeyword" => {
                 for keyword in keywords {
                     let escaped = escape_regex(&keyword);
-                    let re = Regex::new(&format!(r"(?i)^({pattern}){escaped}({pattern})?$")).unwrap();
+                    let re =
+                        Regex::new(&format!(r"(?i)^({pattern}){escaped}({pattern})?$")).unwrap();
                     if let Some(caps) = re.captures(content) {
-                        let mut out = caps.get(1).map(|m| m.as_str().to_string()).unwrap_or_default();
+                        let mut out = caps
+                            .get(1)
+                            .map(|m| m.as_str().to_string())
+                            .unwrap_or_default();
                         if let Some(g2) = caps.get(2) {
                             out.push_str(g2.as_str());
                         }
@@ -340,10 +361,10 @@ impl DeductionEngine {
             "numberIncludeKeyword" => {
                 for keyword in keywords {
                     let re = Regex::new(&format!(r"({pattern})")).unwrap();
-                    if let Some(m) = re.find(content) {
-                        if content.to_lowercase().contains(&keyword.to_lowercase()) {
-                            return Some(m.as_str().to_string());
-                        }
+                    if let Some(m) = re.find(content)
+                        && content.to_lowercase().contains(&keyword.to_lowercase())
+                    {
+                        return Some(m.as_str().to_string());
                     }
                 }
                 None
@@ -360,18 +381,18 @@ impl Default for DeductionEngine {
 }
 
 fn normalize_formats(formats: &Value, fallback: &[String]) -> Vec<String> {
-    if let Some(arr) = formats.as_array() {
-        if !arr.is_empty() {
-            let mut seen = std::collections::HashSet::new();
-            let mut out = Vec::new();
-            for v in arr {
-                let s = as_s(v);
-                if seen.insert(s.clone()) {
-                    out.push(s);
-                }
+    if let Some(arr) = formats.as_array()
+        && !arr.is_empty()
+    {
+        let mut seen = std::collections::HashSet::new();
+        let mut out = Vec::new();
+        for v in arr {
+            let s = as_s(v);
+            if seen.insert(s.clone()) {
+                out.push(s);
             }
-            return out;
         }
+        return out;
     }
     fallback.to_vec()
 }
@@ -388,14 +409,20 @@ mod tests {
     #[test]
     fn any_number() {
         let mut e = DeductionEngine::new();
-        assert_eq!(e.match_rule("来了12", &rule("anyNumber")), (Some("来了12".into()), None));
+        assert_eq!(
+            e.match_rule("来了12", &rule("anyNumber")),
+            (Some("来了12".into()), None)
+        );
         assert_eq!(e.match_rule("abc", &rule("anyNumber")), (None, None));
     }
 
     #[test]
     fn only_pure_number() {
         let mut e = DeductionEngine::new();
-        assert_eq!(e.match_rule("12", &rule("onlyPureNumber")), (Some("12".into()), None));
+        assert_eq!(
+            e.match_rule("12", &rule("onlyPureNumber")),
+            (Some("12".into()), None)
+        );
         assert_eq!(e.match_rule("12a", &rule("onlyPureNumber")), (None, None));
     }
 
@@ -404,7 +431,10 @@ mod tests {
         let mut e = DeductionEngine::new();
         assert_eq!(e.match_rule("1", &rule("only12")), (Some("1".into()), None));
         assert_eq!(e.match_rule("3", &rule("only12")), (None, None));
-        assert_eq!(e.match_rule("3", &rule("exclude12")), (Some("3".into()), None));
+        assert_eq!(
+            e.match_rule("3", &rule("exclude12")),
+            (Some("3".into()), None)
+        );
         assert_eq!(e.match_rule("2", &rule("exclude12")), (None, None));
     }
 

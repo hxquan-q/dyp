@@ -1,9 +1,9 @@
-import * as React from 'react'
-import { cn } from '@/lib/utils'
+import * as React from 'react';
+import { cn } from '@/lib/utils';
 
 /** clamp 辅助（官方 am） */
 function clamp(v: number, min: number, max: number) {
-  return Math.min(Math.max(v, min), max)
+  return Math.min(Math.max(v, min), max);
 }
 
 /**
@@ -25,65 +25,65 @@ export function TemplateFieldCanvasItem({
   canvasWidth,
   canvasHeight,
 }: {
-  item: any
-  selected: boolean
-  onSelect: (id: number) => void
-  onChange: (id: number, patch: any) => void
-  zoom: number
-  canvasWidth: number
-  canvasHeight: number
+  item: any;
+  selected: boolean;
+  onSelect: (id: number) => void;
+  onChange: (id: number, patch: any) => void;
+  zoom: number;
+  canvasWidth: number;
+  canvasHeight: number;
 }) {
   // 拖拽移动
   const startDrag = (e: React.MouseEvent) => {
-    if (item.locked) return
-    e.preventDefault()
-    e.stopPropagation()
-    onSelect(item.id)
-    const startX = e.clientX
-    const startY = e.clientY
-    const origLeft = item.left
-    const origTop = item.top
+    if (item.locked) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(item.id);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const origLeft = item.left;
+    const origTop = item.top;
     const onMove = (ev: MouseEvent) => {
-      const dx = (ev.clientX - startX) / zoom
-      const dy = (ev.clientY - startY) / zoom
+      const dx = (ev.clientX - startX) / zoom;
+      const dy = (ev.clientY - startY) / zoom;
       onChange(item.id, {
         left: clamp(origLeft + dx, 0, canvasWidth - item.width),
         top: clamp(origTop + dy, 0, canvasHeight - item.height),
-      })
-    }
+      });
+    };
     const onUp = () => {
-      document.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseup', onUp)
-    }
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup', onUp)
-  }
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
 
   // 右下角缩放
   const startResize = (e: React.MouseEvent) => {
-    if (item.locked) return
-    e.preventDefault()
-    e.stopPropagation()
-    onSelect(item.id)
-    const startX = e.clientX
-    const startY = e.clientY
-    const origW = item.width
-    const origH = item.height
+    if (item.locked) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(item.id);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const origW = item.width;
+    const origH = item.height;
     const onMove = (ev: MouseEvent) => {
-      const dx = (ev.clientX - startX) / zoom
-      const dy = (ev.clientY - startY) / zoom
+      const dx = (ev.clientX - startX) / zoom;
+      const dy = (ev.clientY - startY) / zoom;
       onChange(item.id, {
         width: clamp(origW + dx, 40, canvasWidth - item.left),
         height: clamp(origH + dy, 18, canvasHeight - item.top),
-      })
-    }
+      });
+    };
     const onUp = () => {
-      document.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseup', onUp)
-    }
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup', onUp)
-  }
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
 
   const displayText = item.custom
     ? item.showName
@@ -91,25 +91,25 @@ export function TemplateFieldCanvasItem({
       ? '黑'
       : item.id === 15
         ? item.showName || '免'
-        : item.aliasName
+        : item.aliasName;
 
   return (
     <div
       className={cn(
         'absolute shadow-sm border cursor-move bg-white',
-        selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+        selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200',
       )}
       style={{
         left: item.left,
         top: item.top,
         width: item.width,
         height: item.height,
-        zIndex: [11, 15].includes(item.id) ? 1111 : item.zIndex ?? 1,
+        zIndex: [11, 15].includes(item.id) ? 1111 : (item.zIndex ?? 1),
       }}
       onMouseDown={startDrag}
       onClick={(e) => {
-        e.stopPropagation()
-        onSelect(item.id)
+        e.stopPropagation();
+        onSelect(item.id);
       }}
     >
       <div
@@ -141,5 +141,5 @@ export function TemplateFieldCanvasItem({
         </div>
       )}
     </div>
-  )
+  );
 }

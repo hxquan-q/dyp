@@ -37,10 +37,10 @@ fn resolve_res_dir() -> PathBuf {
     if let Ok(d) = std::env::var("KDB_RES_DIR") {
         candidates.push(PathBuf::from(d));
     }
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(parent) = exe.parent() {
-            candidates.push(parent.to_path_buf());
-        }
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(parent) = exe.parent()
+    {
+        candidates.push(parent.to_path_buf());
     }
     if let Ok(cwd) = std::env::current_dir() {
         candidates.push(cwd.clone());
@@ -67,12 +67,12 @@ fn resolve_shell_path(res_dir: &std::path::Path) -> PathBuf {
     if let Ok(p) = std::env::var("KDB_SHELL") {
         return PathBuf::from(p);
     }
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(parent) = exe.parent() {
-            let p = parent.join("shell.html");
-            if p.is_file() {
-                return p;
-            }
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(parent) = exe.parent()
+    {
+        let p = parent.join("shell.html");
+        if p.is_file() {
+            return p;
         }
     }
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -84,7 +84,11 @@ fn resolve_shell_path(res_dir: &std::path::Path) -> PathBuf {
 }
 
 #[derive(Parser, Debug)]
-#[command(name = "koudanbao-backend", version, about = "扣单宝本地 SaaS Mock (Rust)")]
+#[command(
+    name = "koudanbao-backend",
+    version,
+    about = "扣单宝本地 SaaS Mock (Rust)"
+)]
 struct Args {
     #[arg(long, default_value = "127.0.0.1")]
     host: String,
@@ -92,11 +96,21 @@ struct Args {
     port: u16,
     #[arg(long, help = "运行数据目录；也可用环境变量 KDB_DATA_DIR 设置")]
     data_dir: Option<String>,
-    #[arg(long, help = "服务启动后输出一行 JSON ready 事件，便于 Electron/脚本读取动态端口")]
+    #[arg(
+        long,
+        help = "服务启动后输出一行 JSON ready 事件，便于 Electron/脚本读取动态端口"
+    )]
     print_json_ready: bool,
-    #[arg(long, default_value = "local", help = "认证模式：local（本地零门槛）/ cloud（未来云账号登录）")]
+    #[arg(
+        long,
+        default_value = "local",
+        help = "认证模式：local（本地零门槛）/ cloud（未来云账号登录）"
+    )]
     auth_mode: String,
-    #[arg(long, help = "关闭自动登录；仍可用任意手机号+任意密码 POST /login（cloud 模式下生效）")]
+    #[arg(
+        long,
+        help = "关闭自动登录；仍可用任意手机号+任意密码 POST /login（cloud 模式下生效）"
+    )]
     no_auto_login: bool,
 }
 
@@ -119,7 +133,11 @@ async fn main() {
         let _ = std::fs::create_dir_all(&data_dir);
     }
 
-    let auth_mode = if args.auth_mode == "cloud" { "cloud".to_string() } else { "local".to_string() };
+    let auth_mode = if args.auth_mode == "cloud" {
+        "cloud".to_string()
+    } else {
+        "local".to_string()
+    };
     // auth.mode=local（默认）：永远零门槛自动登录；cloud 模式下可用 --no-auto-login 开启登录门
     let auto_login = auth_mode == "local" || !args.no_auto_login;
     let state = Arc::new(state::AppState::new(

@@ -5,7 +5,7 @@
 //! 避免写一半崩溃留下损坏 JSON。
 
 use crate::state::AppState;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::io::Write;
 use std::path::Path;
 
@@ -26,15 +26,13 @@ pub fn empty_store() -> Value {
 /// 从磁盘读取并合并默认字段（对齐 Python `_load_global_store`）
 pub fn load_store(path: &Path) -> Value {
     let mut data = empty_store();
-    if let Ok(text) = std::fs::read_to_string(path) {
-        if !text.trim().is_empty() {
-            if let Ok(parsed) = serde_json::from_str::<Value>(&text) {
-                if let Some(obj) = parsed.as_object() {
-                    for (k, v) in obj {
-                        data.as_object_mut().unwrap().insert(k.clone(), v.clone());
-                    }
-                }
-            }
+    if let Ok(text) = std::fs::read_to_string(path)
+        && !text.trim().is_empty()
+        && let Ok(parsed) = serde_json::from_str::<Value>(&text)
+        && let Some(obj) = parsed.as_object()
+    {
+        for (k, v) in obj {
+            data.as_object_mut().unwrap().insert(k.clone(), v.clone());
         }
     }
     data
@@ -54,8 +52,7 @@ pub fn save_store(state: &AppState) -> Result<(), String> {
     let tmp = state.store_path.with_extension("json.tmp");
     {
         let mut f = std::fs::File::create(&tmp).map_err(|e| e.to_string())?;
-        f.write_all(json.as_bytes())
-            .map_err(|e| e.to_string())?;
+        f.write_all(json.as_bytes()).map_err(|e| e.to_string())?;
         f.sync_all().map_err(|e| e.to_string())?;
     }
     std::fs::rename(&tmp, &state.store_path).map_err(|e| e.to_string())?;
@@ -63,7 +60,7 @@ pub fn save_store(state: &AppState) -> Result<(), String> {
 }
 
 /// 便捷：从 store 取指定 key（调用方持锁前先 clone，避免锁泄漏——直接读引用）
-pub fn store_get<'a>(state: &'a AppState, key: &str) -> Value {
+pub fn store_get(state: &AppState, key: &str) -> Value {
     state
         .store
         .lock()
@@ -94,22 +91,24 @@ pub fn log_print_items(state: &AppState, items: &[Value]) {
         .filter_map(|r| {
             r.get("id")
                 .or_else(|| r.get("comment_id"))
-                .map(|v| crate::domain::as_s(v))
+                .map(crate::domain::as_s)
         })
         .collect();
     for it in items {
         let mut row = it.clone();
         if row.get("created_at").is_none() {
-            row.as_object_mut().map(|o| o.insert("created_at".into(), Value::String(stamp.clone())));
+            row.as_object_mut()
+                .map(|o| o.insert("created_at".into(), Value::String(stamp.clone())));
         }
         if row.get("id").is_none() {
             let fallback = format!("pl-{}", logs.len() + items.len());
             let id = row
                 .get("comment_id")
                 .or_else(|| row.get("id"))
-                .map(|v| crate::domain::as_s(v))
+                .map(crate::domain::as_s)
                 .unwrap_or(fallback);
-            row.as_object_mut().map(|o| o.insert("id".into(), Value::String(id)));
+            row.as_object_mut()
+                .map(|o| o.insert("id".into(), Value::String(id)));
         }
         if !existing_ids.contains(&crate::domain::as_s(row.get("id").unwrap_or(&Value::Null))) {
             logs.push(row);

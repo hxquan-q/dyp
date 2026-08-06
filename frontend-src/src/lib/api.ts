@@ -1,5 +1,5 @@
-import { router } from '@inertiajs/react'
-import { http } from '@/lib/http'
+import { router } from '@inertiajs/react';
+import { http } from '@/lib/http';
 
 /**
  * 与原始 bundle 的 Et（Inertia router）兼容的封装
@@ -16,4 +16,4 @@ export const api = {
   postJson: (url: string, body?: any, opts?: any) => http.post(url, body, opts),
   putJson: (url: string, body?: any, opts?: any) => http.put(url, body, opts),
   deleteJson: (url: string, opts?: any) => http.delete(url, opts),
-}
+};

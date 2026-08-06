@@ -1,7 +1,7 @@
-import * as React from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { cn } from '@/lib/utils'
-import { rp, li, Vd } from '@/lib/reverse-runtime'
+import * as React from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
+import { rp, li, Vd } from '@/lib/reverse-runtime';
 
 /**
  * 模板尺寸选择弹窗（官方 cw 完整逻辑）
@@ -19,14 +19,14 @@ export function TemplateSizeDialog({
   initialWidth = 50,
   initialHeight = 30,
 }: {
-  open: boolean
-  onOpenChange: (v: boolean) => void
-  onConfirm: (v: { width: number; height: number; sizeKey: string }) => void
-  onInvalid?: (msg: string) => void
-  title?: string
-  initialSize?: string
-  initialWidth?: number
-  initialHeight?: number
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onConfirm: (v: { width: number; height: number; sizeKey: string }) => void;
+  onInvalid?: (msg: string) => void;
+  title?: string;
+  initialSize?: string;
+  initialWidth?: number;
+  initialHeight?: number;
 }) {
   const presets = React.useMemo(
     () =>
@@ -36,46 +36,48 @@ export function TemplateSizeDialog({
         width: Number(t.width),
         height: Number(t.height),
       })),
-    []
-  )
+    [],
+  );
 
-  const [selectedSize, setSelectedSize] = React.useState(initialSize)
-  const [customWidth, setCustomWidth] = React.useState(initialWidth ? String(initialWidth) : '')
-  const [customHeight, setCustomHeight] = React.useState(initialHeight ? String(initialHeight) : '')
+  const [selectedSize, setSelectedSize] = React.useState(initialSize);
+  const [customWidth, setCustomWidth] = React.useState(initialWidth ? String(initialWidth) : '');
+  const [customHeight, setCustomHeight] = React.useState(
+    initialHeight ? String(initialHeight) : '',
+  );
 
   React.useEffect(() => {
-    if (!open) return
+    if (!open) return;
     // 从 initialSize 解析当前选中的尺寸（可能为 custom）
-    const found = presets.find((p: any) => p.value === li(initialSize))
+    const found = presets.find((p: any) => p.value === li(initialSize));
     if (found) {
-      setSelectedSize(found.value)
-      setCustomWidth(String(found.width))
-      setCustomHeight(String(found.height))
+      setSelectedSize(found.value);
+      setCustomWidth(String(found.width));
+      setCustomHeight(String(found.height));
     } else {
-      setSelectedSize(Vd)
-      setCustomWidth(String(initialWidth || ''))
-      setCustomHeight(String(initialHeight || ''))
+      setSelectedSize(Vd);
+      setCustomWidth(String(initialWidth || ''));
+      setCustomHeight(String(initialHeight || ''));
     }
-  }, [open, initialSize, initialWidth, initialHeight, presets])
+  }, [open, initialSize, initialWidth, initialHeight, presets]);
 
   const handleConfirm = () => {
     if (selectedSize === Vd) {
       if (!customWidth || !customHeight) {
-        onInvalid?.('请输入完整的自定义宽高')
-        return
+        onInvalid?.('请输入完整的自定义宽高');
+        return;
       }
-      const w = Number(customWidth)
-      const h = Number(customHeight)
+      const w = Number(customWidth);
+      const h = Number(customHeight);
       if (!w || !h) {
-        onInvalid?.('请输入有效的自定义宽高')
-        return
+        onInvalid?.('请输入有效的自定义宽高');
+        return;
       }
-      onConfirm({ width: w, height: h, sizeKey: Vd })
-      return
+      onConfirm({ width: w, height: h, sizeKey: Vd });
+      return;
     }
-    const found = presets.find((p: any) => p.value === selectedSize)
-    if (found) onConfirm({ width: found.width, height: found.height, sizeKey: found.value })
-  }
+    const found = presets.find((p: any) => p.value === selectedSize);
+    if (found) onConfirm({ width: found.width, height: found.height, sizeKey: found.value });
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -96,7 +98,7 @@ export function TemplateSizeDialog({
                     'rounded-md border px-3 py-2 text-sm transition',
                     selectedSize === p.value
                       ? 'border-blue-500 bg-blue-50 text-blue-600'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300',
                   )}
                   onClick={() => setSelectedSize(p.value)}
                 >
@@ -109,7 +111,7 @@ export function TemplateSizeDialog({
                   'rounded-md border px-3 py-2 text-sm transition',
                   selectedSize === Vd
                     ? 'border-blue-500 bg-blue-50 text-blue-600'
-                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300',
                 )}
                 onClick={() => setSelectedSize(Vd)}
               >
@@ -155,5 +157,5 @@ export function TemplateSizeDialog({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

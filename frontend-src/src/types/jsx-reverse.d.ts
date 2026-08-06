@@ -1,4 +1,4 @@
-import * as React from 'react'
+import * as React from 'react';
 
 /**
  * 反转版 JSX 的全局 JSX 类型声明
@@ -10,9 +10,9 @@ import * as React from 'react'
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      ie: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+      ie: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
     }
   }
 }
 
-export {}
+export {};

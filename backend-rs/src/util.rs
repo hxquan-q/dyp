@@ -2,7 +2,7 @@
 //! 请求体/表单解析、HTML 转义、percent-decode、cookie 解析。
 
 use chrono::{Duration, FixedOffset, Utc};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// UTC+8（对齐 Python `TZ = timezone(timedelta(hours=8))`）
 pub fn tz() -> FixedOffset {
@@ -74,7 +74,10 @@ pub fn token_urlsafe(nbytes: usize) -> String {
 
 /// Python `secrets.token_hex(n)` 等价
 pub fn token_hex(nbytes: usize) -> String {
-    random_bytes(nbytes).iter().map(|b| format!("{b:02x}")).collect()
+    random_bytes(nbytes)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect()
 }
 
 // ---- 字符串 ----
@@ -83,7 +86,10 @@ pub fn token_hex(nbytes: usize) -> String {
 pub fn escape_regex(s: &str) -> String {
     let mut out = String::with_capacity(s.len() + 8);
     for ch in s.chars() {
-        if matches!(ch, '.' | '*' | '+' | '?' | '^' | '$' | '{' | '}' | '(' | ')' | '|' | '[' | ']' | '\\') {
+        if matches!(
+            ch,
+            '.' | '*' | '+' | '?' | '^' | '$' | '{' | '}' | '(' | ')' | '|' | '[' | ']' | '\\'
+        ) {
             out.push('\\');
         }
         out.push(ch);
@@ -141,12 +147,13 @@ pub fn percent_decode(s: &str) -> String {
     let mut out = Vec::with_capacity(bytes.len());
     let mut i = 0;
     while i < bytes.len() {
-        if bytes[i] == b'%' && i + 2 < bytes.len() {
-            if let (Some(h), Some(l)) = (hex_val(bytes[i + 1]), hex_val(bytes[i + 2])) {
-                out.push(h * 16 + l);
-                i += 3;
-                continue;
-            }
+        if bytes[i] == b'%'
+            && i + 2 < bytes.len()
+            && let (Some(h), Some(l)) = (hex_val(bytes[i + 1]), hex_val(bytes[i + 2]))
+        {
+            out.push(h * 16 + l);
+            i += 3;
+            continue;
         }
         out.push(bytes[i]);
         i += 1;
@@ -170,7 +177,7 @@ pub fn parse_qs(query: &str) -> std::collections::HashMap<String, Vec<String>> {
         };
         // parse_qs 把 '+' 解码为空格（percent_decode 不做，需在此处理）
         let v = percent_decode(&v.replace('+', " "));
-        let k = percent_decode(&k);
+        let k = percent_decode(k);
         out.entry(k).or_default().push(v);
     }
     out
@@ -187,10 +194,8 @@ pub fn parse_body_any(body: &[u8], content_type: &str) -> Value {
     let looks_json = ct.contains("application/json")
         || body.first() == Some(&b'{')
         || body.first() == Some(&b'[');
-    if looks_json {
-        if let Ok(v) = serde_json::from_slice::<Value>(body) {
-            return v;
-        }
+    if looks_json && let Ok(v) = serde_json::from_slice::<Value>(body) {
+        return v;
     }
     parse_form(body, content_type)
 }
@@ -202,21 +207,21 @@ pub fn parse_form(body: &[u8], content_type: &str) -> Value {
     }
     let ct = content_type.to_lowercase();
     if ct.contains("application/json") {
-        if let Ok(v) = serde_json::from_slice::<Value>(body) {
-            if let Value::Object(map) = v {
-                let mut out = serde_json::Map::new();
-                for (k, val) in map {
-                    let s = match val {
-                        Value::Null => String::new(),
-                        Value::Object(_) | Value::Array(_) => {
-                            serde_json::to_string(&val).unwrap_or_default()
-                        }
-                        other => other.to_string(),
-                    };
-                    out.insert(k, Value::String(s));
-                }
-                return Value::Object(out);
+        if let Ok(v) = serde_json::from_slice::<Value>(body)
+            && let Value::Object(map) = v
+        {
+            let mut out = serde_json::Map::new();
+            for (k, val) in map {
+                let s = match val {
+                    Value::Null => String::new(),
+                    Value::Object(_) | Value::Array(_) => {
+                        serde_json::to_string(&val).unwrap_or_default()
+                    }
+                    other => other.to_string(),
+                };
+                out.insert(k, Value::String(s));
             }
+            return Value::Object(out);
         }
         return json!({});
     }
@@ -307,7 +312,10 @@ mod tests {
     fn token_urlsafe_charset() {
         let t = token_urlsafe(32);
         assert_eq!(t.len(), 43);
-        assert!(t.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'));
+        assert!(
+            t.chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+        );
     }
 
     #[test]
@@ -318,7 +326,10 @@ mod tests {
 
     #[test]
     fn html_escape_quotes() {
-        assert_eq!(html_escape("<a href='x'>&"), "&lt;a href=&#x27;x&#x27;&gt;&amp;");
+        assert_eq!(
+            html_escape("<a href='x'>&"),
+            "&lt;a href=&#x27;x&#x27;&gt;&amp;"
+        );
     }
 
     #[test]

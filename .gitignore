@@ -22,7 +22,12 @@ global-store.json
 # 开发截图 / 临时文件
 login-window.png
 dashboard_run.png
+ui-review-*.png
+ui-review-*.jpg
 *.tmp
+
+# MCP 运行时数据
+.playwright-mcp/
 
 # 系统
 .DS_Store

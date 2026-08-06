@@ -1,4 +1,4 @@
-import * as React from 'react'
+import * as React from 'react';
 
 /**
  * 页面级错误边界
@@ -11,16 +11,16 @@ export class PageErrorBoundary extends React.Component<
   { hasError: boolean; message: string }
 > {
   constructor(props: { children: React.ReactNode }) {
-    super(props)
-    this.state = { hasError: false, message: '' }
+    super(props);
+    this.state = { hasError: false, message: '' };
   }
 
   static getDerivedStateFromError(error: Error) {
-    return { hasError: true, message: error?.message || String(error) }
+    return { hasError: true, message: error?.message || String(error) };
   }
 
   componentDidCatch(error: Error) {
-    console.error('[page-error]', error)
+    console.error('[page-error]', error);
   }
 
   render() {
@@ -35,8 +35,8 @@ export class PageErrorBoundary extends React.Component<
             <p className="mt-1 font-mono text-xs text-red-500">{this.state.message}</p>
           </div>
         </div>
-      )
+      );
     }
-    return this.props.children
+    return this.props.children;
   }
 }

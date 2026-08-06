@@ -1,5 +1,5 @@
-import * as React from 'react'
-import { cn } from '@/lib/utils'
+import * as React from 'react';
+import { cn } from '@/lib/utils';
 
 /**
  * 反转版占位选择器组件
@@ -9,9 +9,9 @@ import { cn } from '@/lib/utils'
  */
 
 interface SelectorOption {
-  id?: number | string
-  name?: string
-  [key: string]: any
+  id?: number | string;
+  name?: string;
+  [key: string]: any;
 }
 
 export function TemplateSelect({
@@ -21,11 +21,11 @@ export function TemplateSelect({
   width = '200px',
   className,
 }: {
-  value?: any
-  onValueChange?: (v: any) => void
-  templateList?: SelectorOption[]
-  width?: string
-  className?: string
+  value?: any;
+  onValueChange?: (v: any) => void;
+  templateList?: SelectorOption[];
+  width?: string;
+  className?: string;
 }) {
   return (
     <select
@@ -41,7 +41,7 @@ export function TemplateSelect({
         </option>
       ))}
     </select>
-  )
+  );
 }
 
 export function PrinterSelect({
@@ -53,13 +53,13 @@ export function PrinterSelect({
   refreshing,
   onRefresh,
 }: {
-  value?: any
-  onValueChange?: (v: any) => void
-  printerList?: SelectorOption[]
-  width?: string
-  className?: string
-  refreshing?: boolean
-  onRefresh?: () => void
+  value?: any;
+  onValueChange?: (v: any) => void;
+  printerList?: SelectorOption[];
+  width?: string;
+  className?: string;
+  refreshing?: boolean;
+  onRefresh?: () => void;
 }) {
   return (
     <div className="flex items-center gap-1">
@@ -85,5 +85,5 @@ export function PrinterSelect({
         {refreshing ? '...' : '刷新'}
       </button>
     </div>
-  )
+  );
 }

@@ -112,16 +112,22 @@ const baseParams = { baseUrl: 'http://127.0.0.1:8787/', apiToken: 'tok', shopId:
   }
 
   // ---- 7. mock 后端契约核查：server-live-sync 响应与主进程期望的 snake_case 契约是否一致 ----
+  // （Python mock 已归档 legacy/backend-python，CI 未检出时跳过；该核查由协议测试 + golden 兜底）
   {
     const fs = require('fs');
-    const srv = fs.readFileSync(path.join(__dirname, '..', 'legacy', 'backend-python', 'server.py'), 'utf8');
-    t(srv.includes('/api/electron/orders/server-sync'), `mock 后端已实现 server-sync 路由分支`);
-    t(srv.includes('server-live-sync'), `mock 后端已提到 server-live-sync`);
-    // 主进程 liveServerOrderSync 期望 snake_case（synced_orders/has_more/lock_skipped）
-    // 而 mock 后端 _electron_api 该分支拼的是 camelCase（syncedOrders/decryptedOrders），
-    // 且不产出 has_more/lock_skipped → 契约缺口
-    const camelOnly = srv.includes('"syncedOrders"') && !/synced_orders/.test(srv);
-    t(camelOnly, `CONTRACT-GAP(已知): mock 后端 server-live-sync 返回 camelCase，主进程期望 snake_case，二开联调时需对齐`);
+    const srvPath = path.join(__dirname, '..', 'legacy', 'backend-python', 'server.py');
+    if (!fs.existsSync(srvPath)) {
+      console.log('  SKIP mock 后端契约核查：legacy/backend-python/server.py 未检出');
+    } else {
+      const srv = fs.readFileSync(srvPath, 'utf8');
+      t(srv.includes('/api/electron/orders/server-sync'), `mock 后端已实现 server-sync 路由分支`);
+      t(srv.includes('server-live-sync'), `mock 后端已提到 server-live-sync`);
+      // 主进程 liveServerOrderSync 期望 snake_case（synced_orders/has_more/lock_skipped）
+      // 而 mock 后端 _electron_api 该分支拼的是 camelCase（syncedOrders/decryptedOrders），
+      // 且不产出 has_more/lock_skipped → 契约缺口
+      const camelOnly = srv.includes('"syncedOrders"') && !/synced_orders/.test(srv);
+      t(camelOnly, `CONTRACT-GAP(已知): mock 后端 server-live-sync 返回 camelCase，主进程期望 snake_case，二开联调时需对齐`);
+    }
   }
 
   console.log(`\n结果: ${pass} 通过, ${fail} 失败`);

@@ -1,34 +1,27 @@
-import * as React from 'react'
-import { router, usePage } from '@inertiajs/react'
-import { ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { useToast } from '@/components/toast-provider'
-import { TemplateFieldCanvasItem } from '@/components/ui/template-field-canvas-item'
-import { TemplateSizeDialog } from '@/components/ui/template-size-dialog'
-import { PrinterSelect } from '@/components/ui/selectors'
-import { Switch } from '@/components/ui/switch'
-import { cn } from '@/lib/utils'
-import { http } from '@/lib/http'
+import * as React from 'react';
+import { router, usePage } from '@inertiajs/react';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
-  cnService,
-  jW,
-  qd,
-  rp,
-  xW,
-  li,
-  Vd,
-  MC,
-  SW,
-  NW,
-  _W,
-  vi,
-} from '@/lib/reverse-runtime'
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/components/toast-provider';
+import { TemplateFieldCanvasItem } from '@/components/ui/template-field-canvas-item';
+import { TemplateSizeDialog } from '@/components/ui/template-size-dialog';
+import { PrinterSelect } from '@/components/ui/selectors';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
+import { http } from '@/lib/http';
+import { cnService, jW, qd, rp, xW, li, Vd, MC, SW, NW, _W, vi } from '@/lib/reverse-runtime';
 
 /**
  * 模板编辑器（复刻官方 EditTemplate 完整实现）
@@ -41,25 +34,25 @@ import {
  * 支持：预置模板切换、自定义尺寸、打印测试页、保存为 custom_config JSON。
  */
 export default function EditTemplate() {
-  const page = usePage() as any
-  const props = page.props ?? {}
-  const template = props.template ?? null
+  const page = usePage() as any;
+  const props = page.props ?? {};
+  const template = props.template ?? null;
 
-  const { showError, showToast } = useToast()
-  const params = new URLSearchParams(window.location.search)
-  const presetWidth = params.get('width')
-  const presetHeight = params.get('height')
+  const { showError, showToast } = useToast();
+  const params = new URLSearchParams(window.location.search);
+  const presetWidth = params.get('width');
+  const presetHeight = params.get('height');
 
   // 字段列表（来自模板 custom_config，或默认字段）
-  const [fields, setFields] = React.useState<any[]>(() => jW(template?.custom_config))
-  const [selectedId, setSelectedId] = React.useState<number | null>(null)
-  const [zoom, setZoom] = React.useState(2)
-  const [printers, setPrinters] = React.useState<any[]>([])
-  const [selectedSize, setSelectedSize] = React.useState('50mm*30mm')
-  const [presetIndex, setPresetIndex] = React.useState(0)
-  const [presetGroups, setPresetGroups] = React.useState<any[]>([])
-  const [sizeDialogOpen, setSizeDialogOpen] = React.useState(false)
-  const [printDialogOpen, setPrintDialogOpen] = React.useState(false)
+  const [fields, setFields] = React.useState<any[]>(() => jW(template?.custom_config));
+  const [selectedId, setSelectedId] = React.useState<number | null>(null);
+  const [zoom, setZoom] = React.useState(2);
+  const [printers, setPrinters] = React.useState<any[]>([]);
+  const [selectedSize, setSelectedSize] = React.useState('50mm*30mm');
+  const [presetIndex, setPresetIndex] = React.useState(0);
+  const [presetGroups, setPresetGroups] = React.useState<any[]>([]);
+  const [sizeDialogOpen, setSizeDialogOpen] = React.useState(false);
+  const [printDialogOpen, setPrintDialogOpen] = React.useState(false);
 
   // 模板基础信息
   const [form, setForm] = React.useState({
@@ -73,22 +66,22 @@ export default function EditTemplate() {
     default_printer: template?.default_printer ?? '',
     horizontal_direction: (template?.horizontal ?? 0) < 0 ? 'left' : 'right',
     vertical_direction: (template?.vertical ?? 0) < 0 ? 'up' : 'down',
-  })
-  const [saving, setSaving] = React.useState(false)
+  });
+  const [saving, setSaving] = React.useState(false);
 
   // 画布尺寸（1mm = 4px 减 4，与官方一致）
   const canvasWidth = React.useMemo(() => {
-    const w = Number(form.width)
-    return w > 0 ? w * 4 - 4 : 196
-  }, [form.width])
+    const w = Number(form.width);
+    return w > 0 ? w * 4 - 4 : 196;
+  }, [form.width]);
   const canvasHeight = React.useMemo(() => {
-    const h = Number(form.height)
-    return h > 0 ? h * 4 - 4 : 116
-  }, [form.height])
+    const h = Number(form.height);
+    return h > 0 ? h * 4 - 4 : 116;
+  }, [form.height]);
 
-  const selectedField = fields.find((f) => f.id === selectedId) ?? null
-  const { state: sidebarState, open: sidebarOpen } = vi()
-  const footerWidth = sidebarState === 'collapsed' || !sidebarOpen ? '20px' : '225px'
+  const selectedField = fields.find((f) => f.id === selectedId) ?? null;
+  const { state: sidebarState, open: sidebarOpen } = vi();
+  const footerWidth = sidebarState === 'collapsed' || !sidebarOpen ? '20px' : '225px';
 
   // 加载打印机
   const loadPrinters = React.useCallback(async (showGuide = false) => {
@@ -96,16 +89,16 @@ export default function EditTemplate() {
       await cnService.loadPrinters(2, {
         showGuideOnError: showGuide,
         onPrinters: (list: any[]) => setPrinters([...list]),
-      })
+      });
     } catch {
       /* 静默 */
     }
-  }, [])
+  }, []);
 
   // 初始化：加载预置模板
   React.useEffect(() => {
-    loadPrinters()
-  }, [loadPrinters])
+    loadPrinters();
+  }, [loadPrinters]);
 
   React.useEffect(() => {
     const groups = xW.map((g: any) => ({
@@ -114,142 +107,150 @@ export default function EditTemplate() {
         ...t,
         custom_config: t.custom_config.map((f: any) => ({ ...f, mirror: false })),
       })),
-    }))
-    setPresetGroups(groups)
-  }, [])
+    }));
+    setPresetGroups(groups);
+  }, []);
 
   /** 选中字段（提升 zIndex 置顶） */
   const selectField = (id: number) => {
-    setSelectedId(id)
-    const maxZ = fields.reduce((acc, f) => Math.max(acc, f.zIndex ?? 100), 100)
-    updateField(id, { zIndex: maxZ + 1 })
-  }
+    setSelectedId(id);
+    const maxZ = fields.reduce((acc, f) => Math.max(acc, f.zIndex ?? 100), 100);
+    updateField(id, { zIndex: maxZ + 1 });
+  };
 
   /** 更新字段属性 */
   const updateField = (id: number, patch: any) => {
-    setFields((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)))
-  }
+    setFields((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+  };
 
   /** 勾选/取消字段（选中时提升 zIndex） */
   const toggleFieldChecked = (id: number, checked: boolean) => {
-    updateField(id, { isChecked: !!checked })
+    updateField(id, { isChecked: !!checked });
     if (checked) {
-      const maxZ = fields.reduce((acc, f) => Math.max(acc, f.zIndex ?? 100), 100)
-      updateField(id, { zIndex: maxZ + 1 })
+      const maxZ = fields.reduce((acc, f) => Math.max(acc, f.zIndex ?? 100), 100);
+      updateField(id, { zIndex: maxZ + 1 });
     }
-    if (!checked && id === selectedId) setSelectedId(null)
-  }
+    if (!checked && id === selectedId) setSelectedId(null);
+  };
 
   /** 选择预置模板 */
   const applyPreset = (index: number) => {
-    const group = presetGroups[index]
-    if (!group?.list?.length) return
-    setForm((prev) => ({ ...prev, name: group.size, width: group.width, height: group.height }))
-    const presetFields = group.list[0].custom_config
+    const group = presetGroups[index];
+    if (!group?.list?.length) return;
+    setForm((prev) => ({ ...prev, name: group.size, width: group.width, height: group.height }));
+    const presetFields = group.list[0].custom_config;
     const merged = fields.map((f) => {
-      const found = presetFields.find((p: any) => p.id === f.id)
-      return found ? { ...found } : { ...qd.find((q: any) => q.id === f.id) }
-    })
-    setFields(merged)
-    setPresetIndex(index)
-  }
+      const found = presetFields.find((p: any) => p.id === f.id);
+      return found ? { ...found } : { ...qd.find((q: any) => q.id === f.id) };
+    });
+    setFields(merged);
+    setPresetIndex(index);
+  };
 
   /** 应用尺寸 */
   const applySize = (sizeKey: string) => {
-    const group = rp.find((g: any) => li(g.size) === sizeKey)
+    const group = rp.find((g: any) => li(g.size) === sizeKey);
     if (group) {
-      setSelectedSize(li(group.size))
-      setForm((prev) => ({ ...prev, width: group.width, height: group.height }))
+      setSelectedSize(li(group.size));
+      setForm((prev) => ({ ...prev, width: group.width, height: group.height }));
     }
-  }
+  };
 
   /** 尺寸弹窗确认 */
   const handleSizeConfirm = ({ width, height, sizeKey }: any) => {
     if (sizeKey === Vd) {
-      setSelectedSize('custom')
-      setPresetGroups([])
+      setSelectedSize('custom');
+      setPresetGroups([]);
       setForm((prev) => ({
         ...prev,
         width,
         height,
         name: prev.name && !prev.name.startsWith('模板/') ? prev.name : '模板/自定义',
-      }))
+      }));
     } else {
-      applySize(sizeKey)
+      applySize(sizeKey);
     }
-    setSizeDialogOpen(false)
-  }
+    setSizeDialogOpen(false);
+  };
 
   /** 序号字段（id=2）的编码格式更新 */
   const updateSerialConfig = (patch: any) => {
-    if (selectedField?.id !== 2) return
-    updateField(2, { ...patch, testValue: MC({ ...selectedField, ...patch }) })
-  }
+    if (selectedField?.id !== 2) return;
+    updateField(2, { ...patch, testValue: MC({ ...selectedField, ...patch }) });
+  };
 
   /** 保存模板 */
   const handleSave = async () => {
-    if (saving) return
-    const checked = fields.filter((f) => f.isChecked)
+    if (saving) return;
+    const checked = fields.filter((f) => f.isChecked);
     if (!checked.length) {
-      showError('请选择展示信息')
-      return
+      showError('请选择展示信息');
+      return;
     }
     const payload = {
       name: form.name.trim() || '',
-      horizontal: Number(form.horizontal) ? (form.horizontal_direction === 'left' ? -Number(form.horizontal) : Number(form.horizontal)) : 0,
-      vertical: Number(form.vertical) ? (form.vertical_direction === 'up' ? -Number(form.vertical) : Number(form.vertical)) : 0,
+      horizontal: Number(form.horizontal)
+        ? form.horizontal_direction === 'left'
+          ? -Number(form.horizontal)
+          : Number(form.horizontal)
+        : 0,
+      vertical: Number(form.vertical)
+        ? form.vertical_direction === 'up'
+          ? -Number(form.vertical)
+          : Number(form.vertical)
+        : 0,
       width: Number(form.width),
       height: Number(form.height),
       is_default: !!form.is_default,
       default_printer: form.default_printer?.trim() || '',
       custom_config: JSON.stringify(checked),
-    }
+    };
     if (!payload.name) {
-      showError('请输入模板名称')
-      return
+      showError('请输入模板名称');
+      return;
     }
-    setSaving(true)
+    setSaving(true);
     try {
       if (form.id) {
-        await http.put(`/tag-templates/${form.id}`, payload)
+        await http.put(`/tag-templates/${form.id}`, payload);
       } else {
-        await http.post('/tag-templates', payload)
+        await http.post('/tag-templates', payload);
       }
-      showToast('保存成功')
-      router.visit('/template')
+      showToast('保存成功');
+      router.visit('/template');
     } catch (err: any) {
-      showError(err?.response?.data?.message || '保存失败')
+      showError(err?.response?.data?.message || '保存失败');
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   /** 打印测试页 */
   const handlePrintTest = () => {
     if (!form.default_printer) {
-      showError('请选择打印机')
-      return
+      showError('请选择打印机');
+      return;
     }
     if (!form.width || !form.height) {
-      showError('请填写宽高')
-      return
+      showError('请填写宽高');
+      return;
     }
-    const checked = fields.filter((f) => f.isChecked)
+    const checked = fields.filter((f) => f.isChecked);
     if (!checked.length) {
-      showError('请选择展示信息')
-      return
+      showError('请选择展示信息');
+      return;
     }
-    showToast('打印测试页已提交（浏览器模式下为模拟）')
-    setPrintDialogOpen(false)
-  }
+    showToast('打印测试页已提交（浏览器模式下为模拟）');
+    setPrintDialogOpen(false);
+  };
 
   const goBack = () => {
     if (window.history.length > 1) {
-      window.history.back()
-      return
+      window.history.back();
+      return;
     }
-    router.visit('/template')
-  }
+    router.visit('/template');
+  };
 
   return (
     <div style={{ position: 'relative' }}>
@@ -274,7 +275,11 @@ export default function EditTemplate() {
               {selectedSize !== 'custom' && presetGroups.length > 0 && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-500 whitespace-nowrap">预置模板：</span>
-                  <RadioGroup value={String(presetIndex)} onValueChange={(v) => applyPreset(Number(v))} className="flex gap-4">
+                  <RadioGroup
+                    value={String(presetIndex)}
+                    onValueChange={(v) => applyPreset(Number(v))}
+                    className="flex gap-4"
+                  >
                     {presetGroups.map((g, i) => (
                       <div key={i} className="flex items-center gap-1 w-[60px]">
                         <RadioGroupItem value={String(i)} id={`preset-${i}`} />
@@ -285,7 +290,9 @@ export default function EditTemplate() {
                 </div>
               )}
               <div className="flex items-center gap-4 flex-wrap">
-                <span className="text-sm font-medium text-gray-500 whitespace-nowrap">偏移矫正：</span>
+                <span className="text-sm font-medium text-gray-500 whitespace-nowrap">
+                  偏移矫正：
+                </span>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
                     {[
@@ -303,7 +310,14 @@ export default function EditTemplate() {
                         {opt.label}
                       </Button>
                     ))}
-                    <Input type="number" min={0} value={form.horizontal} onChange={(e) => setForm({ ...form, horizontal: Number(e.target.value) })} placeholder="距离" className="w-24" />
+                    <Input
+                      type="number"
+                      min={0}
+                      value={form.horizontal}
+                      onChange={(e) => setForm({ ...form, horizontal: Number(e.target.value) })}
+                      placeholder="距离"
+                      className="w-24"
+                    />
                     <span className="text-xs text-gray-500">mm</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -322,7 +336,14 @@ export default function EditTemplate() {
                         {opt.label}
                       </Button>
                     ))}
-                    <Input type="number" min={0} value={form.vertical} onChange={(e) => setForm({ ...form, vertical: Number(e.target.value) })} placeholder="距离" className="w-24" />
+                    <Input
+                      type="number"
+                      min={0}
+                      value={form.vertical}
+                      onChange={(e) => setForm({ ...form, vertical: Number(e.target.value) })}
+                      placeholder="距离"
+                      className="w-24"
+                    />
                     <span className="text-xs text-gray-500">mm</span>
                   </div>
                 </div>
@@ -342,11 +363,20 @@ export default function EditTemplate() {
                   key={field.id}
                   className={cn(
                     'flex items-center gap-3 border rounded px-3 py-2 cursor-pointer transition',
-                    field.id === selectedId ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                    field.id === selectedId ? 'border-blue-500 bg-blue-50' : 'border-gray-200',
                   )}
                 >
-                  <Checkbox checked={field.isChecked} onCheckedChange={(v) => toggleFieldChecked(field.id, !!v)} />
-                  <div className="flex-1" onClick={(e) => { e.stopPropagation(); selectField(field.id) }}>
+                  <Checkbox
+                    checked={field.isChecked}
+                    onCheckedChange={(v) => toggleFieldChecked(field.id, !!v)}
+                  />
+                  <div
+                    className="flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      selectField(field.id);
+                    }}
+                  >
                     <p className="text-sm font-medium text-gray-800">{field.aliasName}</p>
                   </div>
                 </label>
@@ -367,14 +397,27 @@ export default function EditTemplate() {
                   <span className="text-xs text-gray-500">mm</span>
                 </div>
                 {!form.id && (
-                  <Button type="button" variant="outline" size="sm" className="ml-3" onClick={() => setSizeDialogOpen(true)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="ml-3"
+                    onClick={() => setSizeDialogOpen(true)}
+                  >
                     修改尺寸
                   </Button>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 <div className="text-sm text-gray-600">预览比例：{zoom.toFixed(1)}</div>
-                <input type="range" min="1" max="2" step="0.05" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} />
+                <input
+                  type="range"
+                  min="1"
+                  max="2"
+                  step="0.05"
+                  value={zoom}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                />
               </div>
             </div>
             <div className="mt-4 flex justify-start">
@@ -416,25 +459,35 @@ export default function EditTemplate() {
                   <div className="space-y-4 pb-4 border-b border-gray-100">
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-gray-600">
-                        {selectedField.id === 15 ? '中奖标识文字' : selectedField.custom ? '自定义内容' : '表头文本'}
+                        {selectedField.id === 15
+                          ? '中奖标识文字'
+                          : selectedField.custom
+                            ? '自定义内容'
+                            : '表头文本'}
                       </Label>
-                      <Input value={selectedField.showName || ''} onChange={(e) => updateField(selectedField.id, { showName: e.target.value })} className="w-full" />
+                      <Input
+                        value={selectedField.showName || ''}
+                        onChange={(e) =>
+                          updateField(selectedField.id, { showName: e.target.value })
+                        }
+                        className="w-full"
+                      />
                     </div>
                     {selectedField.id !== 15 && (
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-gray-600">打印表头</Label>
                         <RadioGroup
                           value={selectedField.showHeader ? 'yes' : 'no'}
-                          onValueChange={(v) => updateField(selectedField.id, { showHeader: v === 'yes' })}
+                          onValueChange={(v) =>
+                            updateField(selectedField.id, { showHeader: v === 'yes' })
+                          }
                           className="flex items-center gap-4"
                         >
                           <label className="flex items-center gap-2 text-sm cursor-pointer">
-                            <RadioGroupItem value="yes" id="header-yes" />
-                            是
+                            <RadioGroupItem value="yes" id="header-yes" />是
                           </label>
                           <label className="flex items-center gap-2 text-sm cursor-pointer">
-                            <RadioGroupItem value="no" id="header-no" />
-                            否
+                            <RadioGroupItem value="no" id="header-no" />否
                           </label>
                         </RadioGroup>
                       </div>
@@ -444,33 +497,54 @@ export default function EditTemplate() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-600">标题字体</Label>
-                    <Select value={String(selectedField.fontSize ?? 12)} onValueChange={(v) => updateField(selectedField.id, { fontSize: Number(v) })}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="请选择字号" /></SelectTrigger>
+                    <Select
+                      value={String(selectedField.fontSize ?? 12)}
+                      onValueChange={(v) => updateField(selectedField.id, { fontSize: Number(v) })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="请选择字号" />
+                      </SelectTrigger>
                       <SelectContent>
                         {SW.map((s: number) => (
-                          <SelectItem key={s} value={String(s)}>{s} 号</SelectItem>
+                          <SelectItem key={s} value={String(s)}>
+                            {s} 号
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-600">字体粗细</Label>
-                    <Select value={selectedField.fontWeight || 'normal'} onValueChange={(v) => updateField(selectedField.id, { fontWeight: v })}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="请选择粗细" /></SelectTrigger>
+                    <Select
+                      value={selectedField.fontWeight || 'normal'}
+                      onValueChange={(v) => updateField(selectedField.id, { fontWeight: v })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="请选择粗细" />
+                      </SelectTrigger>
                       <SelectContent>
                         {NW.map((o: any) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                          <SelectItem key={o.value} value={o.value}>
+                            {o.label}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-600">字体类型</Label>
-                    <Select value={selectedField.fontFamily || 'SimHei'} onValueChange={(v) => updateField(selectedField.id, { fontFamily: v })}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="请选择字体" /></SelectTrigger>
+                    <Select
+                      value={selectedField.fontFamily || 'SimHei'}
+                      onValueChange={(v) => updateField(selectedField.id, { fontFamily: v })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="请选择字体" />
+                      </SelectTrigger>
                       <SelectContent>
                         {_W.map((o: any) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                          <SelectItem key={o.value} value={o.value}>
+                            {o.label}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -478,8 +552,13 @@ export default function EditTemplate() {
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-600">锁定</Label>
                     <div className="flex items-center h-10">
-                      <Switch checked={!!selectedField.locked} onCheckedChange={(v) => updateField(selectedField.id, { locked: !!v })} />
-                      <span className="ml-3 text-sm text-gray-600">{selectedField.locked ? '已锁定位置' : '允许拖拽'}</span>
+                      <Switch
+                        checked={!!selectedField.locked}
+                        onCheckedChange={(v) => updateField(selectedField.id, { locked: !!v })}
+                      />
+                      <span className="ml-3 text-sm text-gray-600">
+                        {selectedField.locked ? '已锁定位置' : '允许拖拽'}
+                      </span>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -490,12 +569,10 @@ export default function EditTemplate() {
                       className="flex items-center gap-4"
                     >
                       <label className="flex items-center gap-2 text-sm cursor-pointer">
-                        <RadioGroupItem value="yes" id="mirror-yes" />
-                        是
+                        <RadioGroupItem value="yes" id="mirror-yes" />是
                       </label>
                       <label className="flex items-center gap-2 text-sm cursor-pointer">
-                        <RadioGroupItem value="no" id="mirror-no" />
-                        否
+                        <RadioGroupItem value="no" id="mirror-no" />否
                       </label>
                     </RadioGroup>
                   </div>
@@ -503,19 +580,32 @@ export default function EditTemplate() {
                 {selectedField.id === 2 && (
                   <div className="col-span-2 bg-blue-50 border border-blue-200 rounded-md p-4 space-y-3">
                     <div className="flex items-center gap-4 flex-wrap">
-                      <Label className="text-sm font-medium text-gray-700 whitespace-nowrap">编码格式</Label>
+                      <Label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                        编码格式
+                      </Label>
                       <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                        <Checkbox checked={!!(selectedField.includeMonth ?? true)} onCheckedChange={(v) => updateSerialConfig({ includeMonth: !!v })} />
+                        <Checkbox
+                          checked={!!(selectedField.includeMonth ?? true)}
+                          onCheckedChange={(v) => updateSerialConfig({ includeMonth: !!v })}
+                        />
                         <span>月</span>
                       </label>
                       <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                        <Checkbox checked={!!(selectedField.includeDay ?? true)} onCheckedChange={(v) => updateSerialConfig({ includeDay: !!v })} />
+                        <Checkbox
+                          checked={!!(selectedField.includeDay ?? true)}
+                          onCheckedChange={(v) => updateSerialConfig({ includeDay: !!v })}
+                        />
                         <span>日</span>
                       </label>
                       <div className="flex items-center gap-2 text-sm text-gray-700">
                         <span>序号位数:</span>
-                        <Select value={String(selectedField.serialDigits ?? 5)} onValueChange={(v) => updateSerialConfig({ serialDigits: Number(v) })}>
-                          <SelectTrigger className="h-8 w-[90px]"><SelectValue placeholder="5位" /></SelectTrigger>
+                        <Select
+                          value={String(selectedField.serialDigits ?? 5)}
+                          onValueChange={(v) => updateSerialConfig({ serialDigits: Number(v) })}
+                        >
+                          <SelectTrigger className="h-8 w-[90px]">
+                            <SelectValue placeholder="5位" />
+                          </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="3">3位</SelectItem>
                             <SelectItem value="4">4位</SelectItem>
@@ -529,7 +619,9 @@ export default function EditTemplate() {
                 )}
               </div>
             ) : (
-              <div className="text-sm text-gray-500 text-center py-10">请选择中间画布中的控件查看编辑内容</div>
+              <div className="text-sm text-gray-500 text-center py-10">
+                请选择中间画布中的控件查看编辑内容
+              </div>
             )}
           </div>
         </div>
@@ -541,7 +633,11 @@ export default function EditTemplate() {
         className="sticky bottom-4 bg-white border rounded-lg py-4 px-6 flex items-center shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-20"
       >
         <div className="flex-1 flex justify-center gap-3">
-          <Button variant="outline" className="border-sky-400 text-sky-600 hover:text-sky-700 hover:border-sky-500" onClick={() => setPrintDialogOpen(true)}>
+          <Button
+            variant="outline"
+            className="border-sky-400 text-sky-600 hover:text-sky-700 hover:border-sky-500"
+            onClick={() => setPrintDialogOpen(true)}
+          >
             打印测试页
           </Button>
           <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSave} disabled={saving}>
@@ -559,7 +655,9 @@ export default function EditTemplate() {
               <Label className="w-[64px] text-gray-700">打印机:</Label>
               <PrinterSelect
                 value={form.default_printer}
-                onValueChange={(v) => setForm({ ...form, default_printer: v === 0 ? '' : String(v) })}
+                onValueChange={(v) =>
+                  setForm({ ...form, default_printer: v === 0 ? '' : String(v) })
+                }
                 printerList={printers}
                 onRefresh={() => loadPrinters(true)}
                 width="200px"
@@ -568,8 +666,12 @@ export default function EditTemplate() {
             </div>
           </div>
           <div className="flex justify-end gap-3 px-6 py-4 border-t">
-            <Button variant="outline" onClick={() => setPrintDialogOpen(false)}>取消</Button>
-            <Button className="w-24 bg-blue-600 hover:bg-blue-700" onClick={handlePrintTest}>立即打印</Button>
+            <Button variant="outline" onClick={() => setPrintDialogOpen(false)}>
+              取消
+            </Button>
+            <Button className="w-24 bg-blue-600 hover:bg-blue-700" onClick={handlePrintTest}>
+              立即打印
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -586,5 +688,5 @@ export default function EditTemplate() {
         title="修改模板尺寸"
       />
     </div>
-  )
+  );
 }

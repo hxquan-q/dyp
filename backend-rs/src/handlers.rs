@@ -4,7 +4,7 @@
 //! 路由：axum fallback 全量进入本分发器（保持与 Python if/elif 完全一致的判定顺序，
 //! 最大化契约保真；模块化体现在各域逻辑已拆到 shops/templates/electron 模块）。
 
-use crate::domain::{as_s, VERSION, default_deduction_config, merged_deduction_config, plans};
+use crate::domain::{VERSION, as_s, default_deduction_config, merged_deduction_config, plans};
 use crate::electron;
 use crate::inertia::{build_page_for, only_props, shell_html};
 use crate::shops;
@@ -17,9 +17,9 @@ use crate::util::{
 };
 use axum::body::Body;
 use axum::extract::State;
-use axum::http::{header, HeaderMap, Method, StatusCode, Uri};
+use axum::http::{HeaderMap, Method, StatusCode, Uri, header};
 use axum::response::Response;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -32,7 +32,11 @@ pub async fn dispatch(
     body: bytes::Bytes,
 ) -> Response<Body> {
     let head_only = method == Method::HEAD;
-    let effective = if head_only { Method::GET } else { method.clone() };
+    let effective = if head_only {
+        Method::GET
+    } else {
+        method.clone()
+    };
 
     // ---- 路径解析（对齐 urlparse + unquote + parse_qs）----
     let raw_path = uri.path().to_string();
@@ -52,7 +56,11 @@ pub async fn dispatch(
     state.sync_session_from_store(&mut sess);
     let mut set_cookie: Vec<String> = Vec::new();
     if sid0.as_deref() != Some(sid.as_str()) {
-        let csrf = sess.get("csrf").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let csrf = sess
+            .get("csrf")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
         set_cookie = session_cookies(&sid, &csrf);
     }
 
@@ -120,7 +128,11 @@ impl Ctx<'_> {
             .and_then(|v| v.to_str().ok())
             .map(|r| {
                 let p = percent_decode(r.split('?').next().unwrap_or(r));
-                if p.is_empty() { fallback.to_string() } else { p }
+                if p.is_empty() {
+                    fallback.to_string()
+                } else {
+                    p
+                }
             })
             .unwrap_or_else(|| fallback.to_string())
     }
@@ -145,7 +157,8 @@ fn send_base(
     cookies: &[String],
     _head_only: bool,
 ) -> Response<Body> {
-    let mut builder = Response::builder().status(StatusCode::from_u16(code).unwrap_or(StatusCode::OK));
+    let mut builder =
+        Response::builder().status(StatusCode::from_u16(code).unwrap_or(StatusCode::OK));
     builder = builder
         .header("Cache-Control", "no-store")
         .header("Access-Control-Allow-Origin", cors_origin(headers))
@@ -170,13 +183,18 @@ fn send_base(
 }
 
 fn json_resp(ctx: &Ctx, code: u16, obj: &Value) -> Response<Body> {
-    let raw = serde_json::to_string(obj).unwrap_or_else(|_| "{}".into()).into_bytes();
+    let raw = serde_json::to_string(obj)
+        .unwrap_or_else(|_| "{}".into())
+        .into_bytes();
     send_base(
         ctx.state,
         code,
         raw,
         ctx.headers,
-        &[("Content-Type", "application/json; charset=utf-8".to_string())],
+        &[(
+            "Content-Type",
+            "application/json; charset=utf-8".to_string(),
+        )],
         &ctx.set_cookie,
         false,
     )
@@ -185,14 +203,19 @@ fn json_resp(ctx: &Ctx, code: u16, obj: &Value) -> Response<Body> {
 fn inertia_resp(ctx: &Ctx, code: u16, page_obj: &Value, only: Option<&str>) -> Response<Body> {
     let page_obj = only_props(page_obj, only);
     if ctx.is_inertia() {
-        let raw = serde_json::to_string(&page_obj).unwrap_or_else(|_| "{}".into()).into_bytes();
+        let raw = serde_json::to_string(&page_obj)
+            .unwrap_or_else(|_| "{}".into())
+            .into_bytes();
         send_base(
             ctx.state,
             code,
             raw,
             ctx.headers,
             &[
-                ("Content-Type", "application/json; charset=utf-8".to_string()),
+                (
+                    "Content-Type",
+                    "application/json; charset=utf-8".to_string(),
+                ),
                 ("X-Inertia", "true".to_string()),
                 ("X-Inertia-Version", VERSION.to_string()),
                 ("Vary", "X-Inertia".to_string()),
@@ -309,17 +332,23 @@ fn handle_get(ctx: &mut Ctx) -> Response<Body> {
     let path = &ctx.path;
 
     // static / build assets
-    if let Some(rest) = path.strip_prefix("/build/assets/") {
-        if !rest.contains('/') && !rest.is_empty() {
-            return serve_file(ctx, &ctx.state.assets_dir.join(rest));
-        }
+    if let Some(rest) = path.strip_prefix("/build/assets/")
+        && !rest.contains('/')
+        && !rest.is_empty()
+    {
+        return serve_file(ctx, &ctx.state.assets_dir.join(rest));
     }
     if path.starts_with("/images/") || path.starts_with("/logo/") || path == "/kefu.png" {
-        let rel = path.trim_start_matches('/').replace('/', std::path::MAIN_SEPARATOR_STR);
+        let rel = path
+            .trim_start_matches('/')
+            .replace('/', std::path::MAIN_SEPARATOR_STR);
         return serve_file(ctx, &ctx.state.static_dir.join(rel));
     }
     if path == "/favicon.ico" {
-        return serve_file(ctx, &ctx.state.static_dir.join("images").join("favicon.ico"));
+        return serve_file(
+            ctx,
+            &ctx.state.static_dir.join("images").join("favicon.ico"),
+        );
     }
     if path == "/build/manifest.json" {
         return json_resp(
@@ -339,7 +368,15 @@ fn handle_get(ctx: &mut Ctx) -> Response<Body> {
 
     // sanctum csrf
     if path == "/sanctum/csrf-cookie" {
-        return send_base(ctx.state, 204, Vec::new(), ctx.headers, &[], &ctx.set_cookie, false);
+        return send_base(
+            ctx.state,
+            204,
+            Vec::new(),
+            ctx.headers,
+            &[],
+            &ctx.set_cookie,
+            false,
+        );
     }
 
     // health
@@ -389,7 +426,14 @@ fn handle_get(ctx: &mut Ctx) -> Response<Body> {
             .as_array()
             .cloned()
             .unwrap_or_default();
-        let s_nick = ctx.qs.get("nickname").and_then(|v| v.first()).cloned().unwrap_or_default().trim().to_string();
+        let s_nick = ctx
+            .qs
+            .get("nickname")
+            .and_then(|v| v.first())
+            .cloned()
+            .unwrap_or_default()
+            .trim()
+            .to_string();
         let s_shop = ctx
             .qs
             .get("shopId")
@@ -399,18 +443,38 @@ fn handle_get(ctx: &mut Ctx) -> Response<Body> {
             .unwrap_or_default()
             .trim()
             .to_string();
-        let s_start = ctx.qs.get("startTime").and_then(|v| v.first()).cloned().unwrap_or_default().trim().to_string();
-        let s_end = ctx.qs.get("endTime").and_then(|v| v.first()).cloned().unwrap_or_default().trim().to_string();
-        let mut filtered: Vec<Value> = logs.into_iter().filter(|r| {
-            let nick = as_s(r.get("nickname").unwrap_or(&Value::Null));
-            let shop_id_v = as_s(r.get("shop_id").unwrap_or_else(|| r.get("id").unwrap_or(&Value::Null)));
-            let created = as_s(r.get("created_at").unwrap_or(&Value::Null));
-            let nick_ok = s_nick.is_empty() || nick.contains(&s_nick);
-            let shop_ok = s_shop.is_empty() || shop_id_v.starts_with(&s_shop);
-            let start_ok = s_start.is_empty() || created >= s_start;
-            let end_ok = s_end.is_empty() || created <= s_end;
-            nick_ok && shop_ok && start_ok && end_ok
-        }).collect();
+        let s_start = ctx
+            .qs
+            .get("startTime")
+            .and_then(|v| v.first())
+            .cloned()
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        let s_end = ctx
+            .qs
+            .get("endTime")
+            .and_then(|v| v.first())
+            .cloned()
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        let mut filtered: Vec<Value> = logs
+            .into_iter()
+            .filter(|r| {
+                let nick = as_s(r.get("nickname").unwrap_or(&Value::Null));
+                let shop_id_v = as_s(
+                    r.get("shop_id")
+                        .unwrap_or_else(|| r.get("id").unwrap_or(&Value::Null)),
+                );
+                let created = as_s(r.get("created_at").unwrap_or(&Value::Null));
+                let nick_ok = s_nick.is_empty() || nick.contains(&s_nick);
+                let shop_ok = s_shop.is_empty() || shop_id_v.starts_with(&s_shop);
+                let start_ok = s_start.is_empty() || created >= s_start;
+                let end_ok = s_end.is_empty() || created <= s_end;
+                nick_ok && shop_ok && start_ok && end_ok
+            })
+            .collect();
         let total = filtered.len();
         let start = ((page_no - 1) * per_page).max(0) as usize;
         let end = (start + per_page as usize).min(total);
@@ -485,9 +549,17 @@ fn handle_get(ctx: &mut Ctx) -> Response<Body> {
 
     // 微信支付状态轮询
     if path == "/payment/status" {
-        let out_no = ctx.qs.get("out_trade_no").and_then(|v| v.first()).cloned().unwrap_or_default();
+        let out_no = ctx
+            .qs
+            .get("out_trade_no")
+            .and_then(|v| v.first())
+            .cloned()
+            .unwrap_or_default();
         let order = ctx.state.payment_order(&out_no);
-        let paid = order.as_ref().map(|o| o.get("status").and_then(|v| v.as_i64()) == Some(1)).unwrap_or(false);
+        let paid = order
+            .as_ref()
+            .map(|o| o.get("status").and_then(|v| v.as_i64()) == Some(1))
+            .unwrap_or(false);
         // mock 便利：不存在的订单号也按已支付处理
         let paid = if order.is_some() { paid } else { true };
         return json_resp(ctx, 200, &json!({"paid": paid, "out_trade_no": out_no}));
@@ -545,14 +617,21 @@ fn handle_get(ctx: &mut Ctx) -> Response<Body> {
     // generic pages
     let mut page_path = path.clone();
     if page_path == "/" {
-        page_path = if ctx.state.auto_login { "/dashboard".to_string() } else { "/login".to_string() };
+        page_path = if ctx.state.auto_login {
+            "/dashboard".to_string()
+        } else {
+            "/login".to_string()
+        };
     }
 
     let mut sess = ctx.sess.clone();
     let pg = build_page_for(ctx.state, &page_path, &mut sess, Some(&ctx.qs));
     // unauthenticated protected
     let authed = sess.get("user").map(|u| !u.is_null()).unwrap_or(false);
-    let is_public = matches!(page_path.as_str(), "/login" | "/register" | "/password/reset");
+    let is_public = matches!(
+        page_path.as_str(),
+        "/login" | "/register" | "/password/reset"
+    );
     if !authed && !is_public {
         return redirect_resp(ctx, "/login");
     }
@@ -594,10 +673,11 @@ fn handle_post(ctx: &mut Ctx) -> Response<Body> {
     let form = parse_form(ctx.body, &content_type);
 
     // 系统日志
-    if path != "/__mock/health" && path != "/health" {
-        if let Some(logger) = &ctx.state.logger {
-            logger.info(&format!("request method=POST path={path}"));
-        }
+    if path != "/__mock/health"
+        && path != "/health"
+        && let Some(logger) = &ctx.state.logger
+    {
+        logger.info(&format!("request method=POST path={path}"));
     }
 
     // ---- auth ----
@@ -686,11 +766,19 @@ fn handle_post(ctx: &mut Ctx) -> Response<Body> {
         if let Some(user) = ctx.sess.get_mut("user").and_then(|u| u.as_object_mut()) {
             user.insert("phone".into(), json!(new_phone));
         }
-        return json_resp(ctx, 200, &json!({"success": true, "data": {"user": ctx.sess.get("user")}}));
+        return json_resp(
+            ctx,
+            200,
+            &json!({"success": true, "data": {"user": ctx.sess.get("user")}}),
+        );
     }
 
     if path == "/pwd/update" {
-        return json_resp(ctx, 200, &json!({"success": true, "message": "密码已更新（本地mock）"}));
+        return json_resp(
+            ctx,
+            200,
+            &json!({"success": true, "message": "密码已更新（本地mock）"}),
+        );
     }
 
     if path == "/sms/send" || path == "/sms/send/register" || path == "/sms/send/password-reset" {
@@ -756,21 +844,30 @@ fn handle_post(ctx: &mut Ctx) -> Response<Body> {
             .to_string();
 
         if let Some(o) = ctx.sess.as_object_mut() {
-            o.insert("electron_device".into(), crate::domain::electron_device("active", Some(&device_id)));
+            o.insert(
+                "electron_device".into(),
+                crate::domain::electron_device("active", Some(&device_id)),
+            );
         }
         // upsert device list
-        let mut devices: Vec<Value> = ctx.sess.get("devices").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+        let mut devices: Vec<Value> = ctx
+            .sess
+            .get("devices")
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default();
         let mut found = false;
         for d in devices.iter_mut() {
             if as_s(d.get("device_id").unwrap_or(&Value::Null)) == device_id {
-                d.as_object_mut().map(|m| {
+                if let Some(m) = d.as_object_mut() {
                     m.insert("last_seen_at".into(), json!(now_iso()));
                     m.insert("device_name".into(), json!(device_name));
                     m.insert("is_current".into(), json!(true));
-                });
+                }
                 found = true;
             } else {
-                d.as_object_mut().map(|m| m.insert("is_current".into(), json!(false)));
+                d.as_object_mut()
+                    .map(|m| m.insert("is_current".into(), json!(false)));
             }
         }
         if !found {
@@ -787,7 +884,9 @@ fn handle_post(ctx: &mut Ctx) -> Response<Body> {
                 "status": "active",
             }));
         }
-        ctx.sess.as_object_mut().map(|o| o.insert("devices".into(), json!(devices)));
+        ctx.sess
+            .as_object_mut()
+            .map(|o| o.insert("devices".into(), json!(devices)));
 
         let has_token = ctx
             .sess
@@ -796,9 +895,12 @@ fn handle_post(ctx: &mut Ctx) -> Response<Body> {
             .map(|s| !s.is_empty())
             .unwrap_or(false);
         if !has_token {
-            ctx.sess
-                .as_object_mut()
-                .map(|o| o.insert("api_token".into(), json!(format!("kdb_local_{}", token_hex(16)))));
+            ctx.sess.as_object_mut().map(|o| {
+                o.insert(
+                    "api_token".into(),
+                    json!(format!("kdb_local_{}", token_hex(16))),
+                )
+            });
         }
         return json_resp(
             ctx,
@@ -852,19 +954,43 @@ fn handle_post(ctx: &mut Ctx) -> Response<Body> {
             .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string();
-        code = code.chars().filter(|c| c.is_ascii_digit()).take(8).collect();
+        code = code
+            .chars()
+            .filter(|c| c.is_ascii_digit())
+            .take(8)
+            .collect();
         if code.chars().count() != 8 {
-            return json_resp(ctx, 422, &json!({"success": false, "message": "兑换码无效，请输入 8 位数字兑换码"}));
+            return json_resp(
+                ctx,
+                422,
+                &json!({"success": false, "message": "兑换码无效，请输入 8 位数字兑换码"}),
+            );
         }
-        let mut codes: Vec<Value> = ctx.sess.get("redeemed_codes").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+        let mut codes: Vec<Value> = ctx
+            .sess
+            .get("redeemed_codes")
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default();
         codes.push(json!(code));
-        ctx.sess.as_object_mut().map(|o| o.insert("redeemed_codes".into(), json!(codes)));
-        return json_resp(ctx, 200, &json!({"success": true, "message": "兑换成功！企业版已开通", "plan": "enterprise"}));
+        ctx.sess
+            .as_object_mut()
+            .map(|o| o.insert("redeemed_codes".into(), json!(codes)));
+        return json_resp(
+            ctx,
+            200,
+            &json!({"success": true, "message": "兑换成功！企业版已开通", "plan": "enterprise"}),
+        );
     }
 
     if path.starts_with("/payment") {
         if ctx.is_inertia() {
-            ctx.sess.as_object_mut().map(|o| o.insert("flash_success".into(), json!("本地mock：无需支付，已是企业版")));
+            ctx.sess.as_object_mut().map(|o| {
+                o.insert(
+                    "flash_success".into(),
+                    json!("本地mock：无需支付，已是企业版"),
+                )
+            });
             let mut sess = ctx.sess.clone();
             let pg = build_page_for(ctx.state, "/settings/order-subscriptions", &mut sess, None);
             ctx.sess = sess;
@@ -915,13 +1041,21 @@ fn handle_post(ctx: &mut Ctx) -> Response<Body> {
     // ---- 弹幕→商品映射 ----
     if path == "/danmu-product-relations" {
         let payload = parse_body_any(ctx.body, &content_type);
-        let danmu = as_s(payload.get("danmu").unwrap_or(&Value::Null)).trim().to_string();
+        let danmu = as_s(payload.get("danmu").unwrap_or(&Value::Null))
+            .trim()
+            .to_string();
         let price = payload.get("price").cloned();
-        let product_no = as_s(payload.get("product_no").unwrap_or(&Value::Null)).trim().to_string();
+        let product_no = as_s(payload.get("product_no").unwrap_or(&Value::Null))
+            .trim()
+            .to_string();
         let tenant_id = payload.get("tenant_id").cloned();
         let mut relations = ctx.state.danmu_relations();
         // 相同弹幕内容不允许重复
-        if !danmu.is_empty() && relations.iter().any(|r| as_s(r.get("danmu").unwrap_or(&Value::Null)) == danmu) {
+        if !danmu.is_empty()
+            && relations
+                .iter()
+                .any(|r| as_s(r.get("danmu").unwrap_or(&Value::Null)) == danmu)
+        {
             if ctx.is_inertia() {
                 let mut sess = ctx.sess.clone();
                 let mut pg = build_page_for(ctx.state, "/config", &mut sess, None);
@@ -929,7 +1063,11 @@ fn handle_post(ctx: &mut Ctx) -> Response<Body> {
                 ctx.sess = sess;
                 return inertia_resp(ctx, 409, &pg, None);
             }
-            return json_resp(ctx, 422, &json!({"success": false, "message": "该弹幕内容您已配置过，请勿重复配置"}));
+            return json_resp(
+                ctx,
+                422,
+                &json!({"success": false, "message": "该弹幕内容您已配置过，请勿重复配置"}),
+            );
         }
         let rel = json!({
             "id": ctx.state.next_dpr_id(),
@@ -953,9 +1091,15 @@ fn handle_post(ctx: &mut Ctx) -> Response<Body> {
     if path.starts_with("/danmu-product-relations/") {
         let rid = path.rsplit('/').next().unwrap_or("").to_string();
         let mut relations = ctx.state.danmu_relations();
-        let idx = relations.iter().position(|r| as_s(r.get("id").unwrap_or(&Value::Null)) == rid);
+        let idx = relations
+            .iter()
+            .position(|r| as_s(r.get("id").unwrap_or(&Value::Null)) == rid);
         let Some(idx) = idx else {
-            return json_resp(ctx, 404, &json!({"success": false, "message": "配置不存在"}));
+            return json_resp(
+                ctx,
+                404,
+                &json!({"success": false, "message": "配置不存在"}),
+            );
         };
         if ctx.cmd == "DELETE" {
             relations.remove(idx);
@@ -994,7 +1138,11 @@ fn handle_post(ctx: &mut Ctx) -> Response<Body> {
             ctx.sess = sess;
             return inertia_resp(ctx, 200, &pg, None);
         }
-        return json_resp(ctx, 200, &json!({"success": true, "code": 0, "data": updated}));
+        return json_resp(
+            ctx,
+            200,
+            &json!({"success": true, "code": 0, "data": updated}),
+        );
     }
 
     // POST /danmu/list — 直播弹幕列表
@@ -1044,8 +1192,18 @@ fn handle_post(ctx: &mut Ctx) -> Response<Body> {
 
     // ---- catch-all 前缀组 ----
     let prefixes = [
-        "/order/", "/danmu", "/buyers", "/blacklists", "/print-log", "/notes",
-        "/phone/", "/pwd/", "/redeem", "/wechat-bindings", "/deduction-rule", "/settings/",
+        "/order/",
+        "/danmu",
+        "/buyers",
+        "/blacklists",
+        "/print-log",
+        "/notes",
+        "/phone/",
+        "/pwd/",
+        "/redeem",
+        "/wechat-bindings",
+        "/deduction-rule",
+        "/settings/",
     ];
     if prefixes.iter().any(|p| path.starts_with(p)) {
         if ctx.is_inertia() {
@@ -1059,7 +1217,11 @@ fn handle_post(ctx: &mut Ctx) -> Response<Body> {
     }
 
     // fallback
-    json_resp(ctx, 200, &json!({"success": true, "message": format!("mock accepted POST {path}")}))
+    json_resp(
+        ctx,
+        200,
+        &json!({"success": true, "message": format!("mock accepted POST {path}")}),
+    )
 }
 
 /// Python `login_session`
@@ -1070,7 +1232,10 @@ fn login_session(state: &AppState, sess: &mut Value, phone: &str) {
         o.insert("user".into(), crate::domain::fake_user(phone));
         o.insert("tenant".into(), crate::domain::fake_tenant());
         o.insert("api_token".into(), json!(token));
-        o.insert("electron_device".into(), crate::domain::electron_device("active", Some(&device_id)));
+        o.insert(
+            "electron_device".into(),
+            crate::domain::electron_device("active", Some(&device_id)),
+        );
         o.insert(
             "devices".into(),
             json!([{
@@ -1086,7 +1251,12 @@ fn login_session(state: &AppState, sess: &mut Value, phone: &str) {
             }]),
         );
         // ★ 保留已有的 shops
-        if !o.contains_key("shops") || o.get("shops").and_then(|v| v.as_array()).map(|a| a.is_empty()).unwrap_or(true) {
+        if !o.contains_key("shops")
+            || o.get("shops")
+                .and_then(|v| v.as_array())
+                .map(|a| a.is_empty())
+                .unwrap_or(true)
+        {
             o.insert("shops".into(), json!([]));
         }
         o.insert("oauth_states".into(), json!({}));
@@ -1095,7 +1265,10 @@ fn login_session(state: &AppState, sess: &mut Value, phone: &str) {
             "templates".into(),
             json!([crate::domain::default_print_template(&state.assets_dir, 1)]),
         );
-        o.insert("flash_success".into(), json!("本地登录成功（mock，无需验证码）"));
+        o.insert(
+            "flash_success".into(),
+            json!("本地登录成功（mock，无需验证码）"),
+        );
     }
 }
 
@@ -1182,10 +1355,12 @@ fn shops_api(ctx: &mut Ctx) -> Response<Body> {
             .or_else(|| payload.get("shopId"))
             .or_else(|| st.get("shop_id"))
             .cloned();
-        let existing_id = existing
-            .as_ref()
-            .and_then(|v| v.as_i64())
-            .or_else(|| existing.as_ref().and_then(|v| v.as_str()).and_then(|s| s.parse().ok()));
+        let existing_id = existing.as_ref().and_then(|v| v.as_i64()).or_else(|| {
+            existing
+                .as_ref()
+                .and_then(|v| v.as_str())
+                .and_then(|s| s.parse().ok())
+        });
         let auth_subject = payload
             .get("auth_subject")
             .and_then(|v| v.as_str())
@@ -1195,19 +1370,26 @@ fn shops_api(ctx: &mut Ctx) -> Response<Body> {
         let picked = shops::pick_fields(
             &fields,
             &[
-                "shop_name", "platform_shop_id", "live_id", "live_room_name",
-                "live_avatar_url", "avatar_url", "shop_curl", "authorization_scope", "raw_data",
+                "shop_name",
+                "platform_shop_id",
+                "live_id",
+                "live_room_name",
+                "live_avatar_url",
+                "avatar_url",
+                "shop_curl",
+                "authorization_scope",
+                "raw_data",
             ],
         );
         let mut shop = shops::make_shop_record(
             &mut ctx.sess,
             &platform_code,
-            picked.get("shop_name").map(|v| as_s(v)),
-            picked.get("platform_shop_id").map(|v| as_s(v)),
-            picked.get("live_id").map(|v| as_s(v)),
-            picked.get("live_room_name").map(|v| as_s(v)),
-            picked.get("live_avatar_url").map(|v| as_s(v)),
-            picked.get("avatar_url").map(|v| as_s(v)),
+            picked.get("shop_name").map(as_s),
+            picked.get("platform_shop_id").map(as_s),
+            picked.get("live_id").map(as_s),
+            picked.get("live_room_name").map(as_s),
+            picked.get("live_avatar_url").map(as_s),
+            picked.get("avatar_url").map(as_s),
             picked.get("shop_curl").cloned(),
             Some(auth_subject),
             picked.get("authorization_scope").cloned(),
@@ -1217,10 +1399,10 @@ fn shops_api(ctx: &mut Ctx) -> Response<Body> {
         let name = as_s(shop.get("shop_name").unwrap_or(&Value::Null));
         if name.is_empty() {
             let fallback = format!("{}订单店铺", crate::domain::platform_name(&platform_code));
-            shop.as_object_mut().map(|o| {
+            if let Some(o) = shop.as_object_mut() {
                 o.insert("shop_name".into(), json!(fallback.clone()));
                 o.insert("name".into(), json!(fallback));
-            });
+            }
         }
         let shop = shops::upsert_shop(ctx.state, &mut ctx.sess, shop);
         if !state.is_empty() {
@@ -1240,23 +1422,23 @@ fn shops_api(ctx: &mut Ctx) -> Response<Body> {
             .unwrap_or("douyin")
             .to_string();
         let mut fields = shops::extract_shop_fields_from_payload(&payload);
-        if as_s(fields.get("live_id").unwrap_or(&Value::Null)).is_empty() {
-            if let Some(meta) = payload.get("metadata") {
-                let more = shops::extract_shop_fields_from_payload(meta);
-                for (k, v) in more.as_object().unwrap() {
-                    fields.as_object_mut().unwrap().insert(k.clone(), v.clone());
-                }
+        if as_s(fields.get("live_id").unwrap_or(&Value::Null)).is_empty()
+            && let Some(meta) = payload.get("metadata")
+        {
+            let more = shops::extract_shop_fields_from_payload(meta);
+            for (k, v) in more.as_object().unwrap() {
+                fields.as_object_mut().unwrap().insert(k.clone(), v.clone());
             }
         }
         let mut shop = shops::make_shop_record(
             &mut ctx.sess,
             &platform_code,
-            fields.get("shop_name").map(|v| as_s(v)),
-            fields.get("platform_shop_id").map(|v| as_s(v)),
-            fields.get("live_id").map(|v| as_s(v)),
-            fields.get("live_room_name").map(|v| as_s(v)),
-            fields.get("live_avatar_url").map(|v| as_s(v)),
-            fields.get("avatar_url").map(|v| as_s(v)),
+            fields.get("shop_name").map(as_s),
+            fields.get("platform_shop_id").map(as_s),
+            fields.get("live_id").map(as_s),
+            fields.get("live_room_name").map(as_s),
+            fields.get("live_avatar_url").map(as_s),
+            fields.get("avatar_url").map(as_s),
             fields.get("shop_curl").cloned(),
             Some(as_s(fields.get("auth_subject").unwrap_or(&Value::Null))),
             fields.get("authorization_scope").cloned(),
@@ -1282,19 +1464,21 @@ fn shops_api(ctx: &mut Ctx) -> Response<Body> {
             .or_else(|| payload.get("shopId"))
             .or_else(|| payload.get("id"))
             .cloned();
-        let existing_id = existing
-            .as_ref()
-            .and_then(|v| v.as_i64())
-            .or_else(|| existing.as_ref().and_then(|v| v.as_str()).and_then(|s| s.parse().ok()));
+        let existing_id = existing.as_ref().and_then(|v| v.as_i64()).or_else(|| {
+            existing
+                .as_ref()
+                .and_then(|v| v.as_str())
+                .and_then(|s| s.parse().ok())
+        });
         let shop = shops::make_shop_record(
             &mut ctx.sess,
             &platform_code,
-            fields.get("shop_name").map(|v| as_s(v)),
-            fields.get("platform_shop_id").map(|v| as_s(v)),
-            fields.get("live_id").map(|v| as_s(v)),
-            fields.get("live_room_name").map(|v| as_s(v)),
-            fields.get("live_avatar_url").map(|v| as_s(v)),
-            fields.get("avatar_url").map(|v| as_s(v)),
+            fields.get("shop_name").map(as_s),
+            fields.get("platform_shop_id").map(as_s),
+            fields.get("live_id").map(as_s),
+            fields.get("live_room_name").map(as_s),
+            fields.get("live_avatar_url").map(as_s),
+            fields.get("avatar_url").map(as_s),
             fields.get("shop_curl").cloned(),
             Some(as_s(fields.get("auth_subject").unwrap_or(&Value::Null))),
             fields.get("authorization_scope").cloned(),
@@ -1308,35 +1492,55 @@ fn shops_api(ctx: &mut Ctx) -> Response<Body> {
     }
 
     if path == "/shops/switch" {
-        let shop_id = payload.get("shop_id").or_else(|| payload.get("shopId")).cloned();
-        return json_resp(ctx, 200, &json!({"success": true, "data": {"shop_id": shop_id, "switched": true}}));
+        let shop_id = payload
+            .get("shop_id")
+            .or_else(|| payload.get("shopId"))
+            .cloned();
+        return json_resp(
+            ctx,
+            200,
+            &json!({"success": true, "data": {"shop_id": shop_id, "switched": true}}),
+        );
     }
 
     // DELETE /shops/{id}
-    if let Some(id_str) = path.strip_prefix("/shops/") {
-        if !id_str.is_empty() && id_str.chars().all(|c| c.is_ascii_digit()) {
-            if ctx.cmd == "DELETE" || ctx.cmd == "POST" {
-                if let Ok(shop_id) = id_str.parse::<i64>() {
-                    let before = ctx.sess.get("shops").and_then(|v| v.as_array()).map(|a| a.len()).unwrap_or(0);
-                    let removed = shops::remove_shop(&mut ctx.sess, shop_id);
-                    let after = ctx.sess.get("shops").and_then(|v| v.as_array()).map(|a| a.len()).unwrap_or(0);
-                    let shop_seq = ctx.sess.get("shop_seq").cloned().unwrap_or(json!(1000));
-                    store::store_set(ctx.state, "shops", ctx.sess.get("shops").cloned().unwrap_or_else(|| json!([])));
-                    store::store_set(ctx.state, "shop_seq", shop_seq);
-                    if ctx.is_inertia() {
-                        let mut sess = ctx.sess.clone();
-                        let pg = build_page_for(ctx.state, "/shops", &mut sess, None);
-                        ctx.sess = sess;
-                        return inertia_resp(ctx, 200, &pg, None);
-                    }
-                    return json_resp(
-                        ctx,
-                        200,
-                        &json!({"success": true, "message": format!("店铺 {shop_id} 已删除（{before} → {after}）"), "_removed": removed}),
-                    );
-                }
-            }
+    if let Some(id_str) = path.strip_prefix("/shops/")
+        && !id_str.is_empty()
+        && id_str.chars().all(|c| c.is_ascii_digit())
+        && (ctx.cmd == "DELETE" || ctx.cmd == "POST")
+        && let Ok(shop_id) = id_str.parse::<i64>()
+    {
+        let before = ctx
+            .sess
+            .get("shops")
+            .and_then(|v| v.as_array())
+            .map(|a| a.len())
+            .unwrap_or(0);
+        let removed = shops::remove_shop(&mut ctx.sess, shop_id);
+        let after = ctx
+            .sess
+            .get("shops")
+            .and_then(|v| v.as_array())
+            .map(|a| a.len())
+            .unwrap_or(0);
+        let shop_seq = ctx.sess.get("shop_seq").cloned().unwrap_or(json!(1000));
+        store::store_set(
+            ctx.state,
+            "shops",
+            ctx.sess.get("shops").cloned().unwrap_or_else(|| json!([])),
+        );
+        store::store_set(ctx.state, "shop_seq", shop_seq);
+        if ctx.is_inertia() {
+            let mut sess = ctx.sess.clone();
+            let pg = build_page_for(ctx.state, "/shops", &mut sess, None);
+            ctx.sess = sess;
+            return inertia_resp(ctx, 200, &pg, None);
         }
+        return json_resp(
+            ctx,
+            200,
+            &json!({"success": true, "message": format!("店铺 {shop_id} 已删除（{before} → {after}）"), "_removed": removed}),
+        );
     }
 
     // generic shops/* fallback
@@ -1346,7 +1550,12 @@ fn shops_api(ctx: &mut Ctx) -> Response<Body> {
         ctx.sess = sess;
         return inertia_resp(ctx, 200, &pg, None);
     }
-    let shops_arr = ctx.sess.get("shops").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+    let shops_arr = ctx
+        .sess
+        .get("shops")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
     let fallback_shop_id = shops_arr
         .last()
         .and_then(|s| s.get("id").cloned())
@@ -1381,16 +1590,25 @@ fn templates_api(ctx: &mut Ctx) -> Response<Body> {
 
     // POST /tag-templates create
     if path == "/tag-templates" && ctx.cmd == "POST" {
-        let mut template_seq = sess.get("template_seq").and_then(|v| v.as_i64()).unwrap_or(1) + 1;
+        let mut template_seq = sess
+            .get("template_seq")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(1)
+            + 1;
         // Python: sess["template_seq"] = int(...) + 1; 然后 tid = sess["template_seq"]
         let tid = template_seq;
         template_seq += 1;
-        sess.as_object_mut().map(|o| o.insert("template_seq".into(), json!(template_seq)));
+        sess.as_object_mut()
+            .map(|o| o.insert("template_seq".into(), json!(template_seq)));
 
         let name = as_s(payload.get("name").unwrap_or(&Value::Null))
             .trim()
             .to_string();
-        let name = if name.is_empty() { format!("模板{tid}") } else { name };
+        let name = if name.is_empty() {
+            format!("模板{tid}")
+        } else {
+            name
+        };
         let custom_config = match payload.get("custom_config") {
             Some(Value::String(s)) => s.clone(),
             Some(v) => serde_json::to_string(v).unwrap_or_else(|_| "[]".into()),
@@ -1409,20 +1627,36 @@ fn templates_api(ctx: &mut Ctx) -> Response<Body> {
             "created_at": now_iso(),
             "updated_at": now_iso(),
         });
-        let is_default = tpl.get("is_default").and_then(|v| v.as_bool()).unwrap_or(false);
-        if is_default {
-            if let Some(arr) = sess.get_mut("templates").and_then(|v| v.as_array_mut()) {
-                for t in arr.iter_mut() {
-                    t.as_object_mut().map(|o| o.insert("is_default".into(), json!(false)));
-                }
+        let is_default = tpl
+            .get("is_default")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+        if is_default && let Some(arr) = sess.get_mut("templates").and_then(|v| v.as_array_mut()) {
+            for t in arr.iter_mut() {
+                t.as_object_mut()
+                    .map(|o| o.insert("is_default".into(), json!(false)));
             }
         }
-        let mut tpls = sess.get("templates").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+        let mut tpls = sess
+            .get("templates")
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default();
         tpls.push(tpl.clone());
-        sess.as_object_mut().map(|o| o.insert("templates".into(), json!(tpls)));
-        sess.as_object_mut().map(|o| o.insert("flash_success".into(), json!(format!("模板「{name}」已保存"))));
+        sess.as_object_mut()
+            .map(|o| o.insert("templates".into(), json!(tpls)));
+        sess.as_object_mut().map(|o| {
+            o.insert(
+                "flash_success".into(),
+                json!(format!("模板「{name}」已保存")),
+            )
+        });
         let template_seq_v = sess.get("template_seq").cloned().unwrap_or(json!(1));
-        store::store_set(ctx.state, "templates", sess.get("templates").cloned().unwrap_or_else(|| json!([])));
+        store::store_set(
+            ctx.state,
+            "templates",
+            sess.get("templates").cloned().unwrap_or_else(|| json!([])),
+        );
         store::store_set(ctx.state, "template_seq", template_seq_v);
         if ctx.is_inertia() {
             ctx.sess = sess;
@@ -1434,82 +1668,126 @@ fn templates_api(ctx: &mut Ctx) -> Response<Body> {
     }
 
     // /tag-templates/{id}
-    if let Some(id_str) = path.strip_prefix("/tag-templates/") {
-        if !id_str.is_empty() && id_str.chars().all(|c| c.is_ascii_digit()) && !id_str.contains('/') {
-            let tid = id_str.parse::<i64>().unwrap_or(0);
-            let mut tpls = sess.get("templates").and_then(|v| v.as_array()).cloned().unwrap_or_default();
-            let existing_idx = tpls.iter().position(|t| t.get("id").and_then(|v| v.as_i64()) == Some(tid));
-            if ctx.cmd == "DELETE" {
-                tpls.retain(|t| t.get("id").and_then(|v| v.as_i64()) != Some(tid));
-                sess.as_object_mut().map(|o| o.insert("templates".into(), json!(tpls)));
-                let template_seq_v = sess.get("template_seq").cloned().unwrap_or(json!(1));
-                store::store_set(ctx.state, "templates", sess.get("templates").cloned().unwrap_or_else(|| json!([])));
-                store::store_set(ctx.state, "template_seq", template_seq_v);
-                if ctx.is_inertia() {
-                    ctx.sess = sess;
-                    let pg = build_page_for(ctx.state, "/template", &mut ctx.sess, None);
-                    return inertia_resp(ctx, 200, &pg, None);
-                }
+    if let Some(id_str) = path.strip_prefix("/tag-templates/")
+        && !id_str.is_empty()
+        && id_str.chars().all(|c| c.is_ascii_digit())
+        && !id_str.contains('/')
+    {
+        let tid = id_str.parse::<i64>().unwrap_or(0);
+        let mut tpls = sess
+            .get("templates")
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default();
+        let existing_idx = tpls
+            .iter()
+            .position(|t| t.get("id").and_then(|v| v.as_i64()) == Some(tid));
+        if ctx.cmd == "DELETE" {
+            tpls.retain(|t| t.get("id").and_then(|v| v.as_i64()) != Some(tid));
+            sess.as_object_mut()
+                .map(|o| o.insert("templates".into(), json!(tpls)));
+            let template_seq_v = sess.get("template_seq").cloned().unwrap_or(json!(1));
+            store::store_set(
+                ctx.state,
+                "templates",
+                sess.get("templates").cloned().unwrap_or_else(|| json!([])),
+            );
+            store::store_set(ctx.state, "template_seq", template_seq_v);
+            if ctx.is_inertia() {
                 ctx.sess = sess;
-                return json_resp(ctx, 200, &json!({"success": true}));
+                let pg = build_page_for(ctx.state, "/template", &mut ctx.sess, None);
+                return inertia_resp(ctx, 200, &pg, None);
             }
-            if matches!(ctx.cmd, "PUT" | "POST" | "PATCH") {
-                if let Some(idx) = existing_idx {
-                    let mut existing = tpls[idx].clone();
-                    if let Some(name_v) = payload.get("name") {
-                        let new_name = as_s(name_v).trim().to_string();
-                        if !new_name.is_empty() {
-                            existing.as_object_mut().map(|o| o.insert("name".into(), json!(new_name)));
-                        }
-                    }
-                    for k in ["width", "height", "horizontal", "vertical"] {
-                        if let Some(v) = payload.get(k) {
-                            if !v.is_null() && as_s(v) != "" {
-                                let val = as_int(Some(v), existing.get(k).and_then(|x| x.as_i64()).unwrap_or(0));
-                                existing.as_object_mut().map(|o| o.insert(k.to_string(), json!(val)));
-                            }
-                        }
-                    }
-                    if let Some(v) = payload.get("default_printer") {
-                        existing.as_object_mut().map(|o| o.insert("default_printer".into(), json!(as_s(v))));
-                    }
-                    if let Some(v) = payload.get("custom_config") {
-                        let cc = match v {
-                            Value::String(s) => s.clone(),
-                            other => serde_json::to_string(other).unwrap_or_else(|_| "[]".into()),
-                        };
-                        existing.as_object_mut().map(|o| o.insert("custom_config".into(), json!(cc)));
-                    }
-                    if let Some(v) = payload.get("is_default") {
-                        let nd = boolish(Some(v));
-                        existing.as_object_mut().map(|o| o.insert("is_default".into(), json!(nd)));
-                        if nd {
-                            for t in tpls.iter_mut() {
-                                if t.get("id").and_then(|x| x.as_i64()) != Some(tid) {
-                                    t.as_object_mut().map(|o| o.insert("is_default".into(), json!(false)));
-                                }
-                            }
-                        }
-                    }
-                    existing.as_object_mut().map(|o| o.insert("updated_at".into(), json!(now_iso())));
-                    tpls[idx] = existing;
-                    sess.as_object_mut().map(|o| o.insert("templates".into(), json!(tpls)));
-                    let name_disp = as_s(tpls[idx].get("name").unwrap_or(&Value::Null));
-                    sess.as_object_mut().map(|o| o.insert("flash_success".into(), json!(format!("模板「{name_disp}」已更新"))));
-                    let template_seq_v = sess.get("template_seq").cloned().unwrap_or(json!(1));
-                    store::store_set(ctx.state, "templates", sess.get("templates").cloned().unwrap_or_else(|| json!([])));
-                    store::store_set(ctx.state, "template_seq", template_seq_v);
-                    if ctx.is_inertia() {
-                        ctx.sess = sess;
-                        let refer = ctx.referer_path("/template");
-                        let target = if refer != "/tag-templates/create" { refer } else { "/template".to_string() };
-                        let pg = build_page_for(ctx.state, &target, &mut ctx.sess, None);
-                        return inertia_resp(ctx, 200, &pg, None);
-                    }
-                    ctx.sess = sess;
-                    return json_resp(ctx, 200, &json!({"success": true, "data": tpls[idx]}));
+            ctx.sess = sess;
+            return json_resp(ctx, 200, &json!({"success": true}));
+        }
+        if matches!(ctx.cmd, "PUT" | "POST" | "PATCH")
+            && let Some(idx) = existing_idx
+        {
+            let mut existing = tpls[idx].clone();
+            if let Some(name_v) = payload.get("name") {
+                let new_name = as_s(name_v).trim().to_string();
+                if !new_name.is_empty() {
+                    existing
+                        .as_object_mut()
+                        .map(|o| o.insert("name".into(), json!(new_name)));
                 }
             }
+            for k in ["width", "height", "horizontal", "vertical"] {
+                if let Some(v) = payload.get(k)
+                    && !v.is_null()
+                    && !as_s(v).is_empty()
+                {
+                    let val = as_int(
+                        Some(v),
+                        existing.get(k).and_then(|x| x.as_i64()).unwrap_or(0),
+                    );
+                    existing
+                        .as_object_mut()
+                        .map(|o| o.insert(k.to_string(), json!(val)));
+                }
+            }
+            if let Some(v) = payload.get("default_printer") {
+                existing
+                    .as_object_mut()
+                    .map(|o| o.insert("default_printer".into(), json!(as_s(v))));
+            }
+            if let Some(v) = payload.get("custom_config") {
+                let cc = match v {
+                    Value::String(s) => s.clone(),
+                    other => serde_json::to_string(other).unwrap_or_else(|_| "[]".into()),
+                };
+                existing
+                    .as_object_mut()
+                    .map(|o| o.insert("custom_config".into(), json!(cc)));
+            }
+            if let Some(v) = payload.get("is_default") {
+                let nd = boolish(Some(v));
+                existing
+                    .as_object_mut()
+                    .map(|o| o.insert("is_default".into(), json!(nd)));
+                if nd {
+                    for t in tpls.iter_mut() {
+                        if t.get("id").and_then(|x| x.as_i64()) != Some(tid) {
+                            t.as_object_mut()
+                                .map(|o| o.insert("is_default".into(), json!(false)));
+                        }
+                    }
+                }
+            }
+            existing
+                .as_object_mut()
+                .map(|o| o.insert("updated_at".into(), json!(now_iso())));
+            tpls[idx] = existing;
+            sess.as_object_mut()
+                .map(|o| o.insert("templates".into(), json!(tpls)));
+            let name_disp = as_s(tpls[idx].get("name").unwrap_or(&Value::Null));
+            sess.as_object_mut().map(|o| {
+                o.insert(
+                    "flash_success".into(),
+                    json!(format!("模板「{name_disp}」已更新")),
+                )
+            });
+            let template_seq_v = sess.get("template_seq").cloned().unwrap_or(json!(1));
+            store::store_set(
+                ctx.state,
+                "templates",
+                sess.get("templates").cloned().unwrap_or_else(|| json!([])),
+            );
+            store::store_set(ctx.state, "template_seq", template_seq_v);
+            if ctx.is_inertia() {
+                ctx.sess = sess;
+                let refer = ctx.referer_path("/template");
+                let target = if refer != "/tag-templates/create" {
+                    refer
+                } else {
+                    "/template".to_string()
+                };
+                let pg = build_page_for(ctx.state, &target, &mut ctx.sess, None);
+                return inertia_resp(ctx, 200, &pg, None);
+            }
+            ctx.sess = sess;
+            return json_resp(ctx, 200, &json!({"success": true, "data": tpls[idx]}));
         }
     }
 
