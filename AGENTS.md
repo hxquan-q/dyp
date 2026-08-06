@@ -17,6 +17,7 @@
 |---|---|---|
 | 桌面壳 | Electron ^43 + electron-builder ^26 + electron-updater | 可用（真实平台登录窗口 + cookie 采集） |
 | 前端 | React 19 + TypeScript 7 + Vite 8 + **Inertia.js 3** + Tailwind 4 + Radix/shadcn 风格 | 17 页面全部可运行 |
+| 前端 lint/format | **oxlint**（Rust 实现，0 error 门禁）+ **prettier**（4 个 M4续大文件豁免） | P0 基线（2026-08-06） |
 | **后端（主力）** | **Rust (axum 0.8) — `backend-rs/`** | ✅ 已迁移完成（2026-08-06） |
 | 后端（参考） | Python 3.14 纯标准库 — `legacy/backend-python/`（http.server） | 已归档，契约参考/差分对照 |
 | 主进程还原 | `electron/main/index.js`（17079 行 webpack 还原，**只读参考**） | 7 平台驱动/弹幕调度/订单解密 |
@@ -76,7 +77,8 @@ E:\dyp\
 
 ```powershell
 npm install                     # 三处依赖（root/frontend-src/electron）
-npm test                        # 全量：typecheck + 后端协议 + 引擎 + JS 逻辑
+npm test                        # 全量：typecheck + 69 协议 + 432 golden + 引擎/调度/JS + Vitest 13
+                                #   （依赖 legacy/ 的用例在 CI 无归档时自动 SKIP，本地全量照跑）
 npm run lint                    # 前端 oxlint（0 error 门禁；重建惯用法为 warn，M4续清理）
 npm run format:check            # 前端 prettier 基线（4 个 M4续大文件豁免，见 frontend-src/.prettierignore）
 npm run build:frontend          # vite build → frontend-src/dist
@@ -166,3 +168,11 @@ backend-dist\koudanbao-backend.exe --host 127.0.0.1 --port 8787   # Rust 版（�
   改 `/api/electron/orders/*` 时两者都要照顾。
 - **`cargo run` 的 ready 行是紧凑 JSON**（Python 版带空格），脚本解析用 `ConvertFrom-Json` 均兼容。
 - **Windows 上 Start-Process 起的后端进程随父 shell 退出**——长驻测试用本工具的后台任务模式。
+- **typescript-eslint 8.x 不兼容 TypeScript 7**：TS7 是原生（tsgo）编译器，包内无 `lib/typescript.js`
+  JS API，typescript-eslint peer 上限 `<6.1.0` → 前端 lint 改选 **oxlint**（Rust 实现，原生支持
+  TS/TSX/React hooks，不依赖 TS 编译器 API）。
+- **`backend-dist\koudanbao-backend.exe` 被占用（EBUSY）**：残留的测试/开发后端进程持有锁时
+  `build-backend.mjs` 拷贝失败 → 先 `Stop-Process` 该 exe 再构建。
+- **前端 lint 噪音源**：重建代码含大量未用导入/压缩名参数（tsconfig 刻意 `noUnusedLocals:false`）；
+  oxlint 基线把 `no-unused-vars`/`no-unused-expressions` 等降为 warn、正确性类别保持 error 门禁，
+  M4续 拆分时逐文件清零。
