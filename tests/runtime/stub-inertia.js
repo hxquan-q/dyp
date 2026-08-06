@@ -1,0 +1,1 @@
+module.exports = { usePage: () => ({}), useForm: () => ({ data: {}, setData: () => {}, post: () => {}, get: () => {}, put: () => {}, reset: () => {}, errors: {} }), router: { reload: () => {}, visit: () => {}, post: () => {}, get: () => {} }, Link: () => null }

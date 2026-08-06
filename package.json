@@ -1,0 +1,37 @@
+{
+  "name": "koudanbao-local",
+  "version": "1.1.2",
+  "description": "扣单宝本地可落地版：本地后端 mock、Electron 桌面壳、可构建前端源码与自动化测试入口。",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build:frontend": "npm --prefix frontend-src run build",
+    "typecheck": "npm --prefix frontend-src run typecheck",
+    "test:backend": "powershell -ExecutionPolicy Bypass -File scripts/test-backend-protocol.ps1",
+    "test:engine": "python tests/test_deduction_engine.py",
+    "test:dispatcher": "node tests/test-danmaku-dispatcher.js",
+    "test:platform": "node tests/test_platform_integration.js",
+    "test:runtime": "node tests/runtime/build-test.mjs && node tests/runtime/out.js",
+    "test:srv-order-sync": "node tests/test-server-order-sync.js",
+    "test:order-sync-coordinator": "node tests/test-order-sync-coordinator.js",
+    "test:douyin-protobuf": "node tests/test-douyin-protobuf.js",
+    "test": "npm run typecheck && npm run test:backend && npm run test:engine && npm run test:dispatcher && npm run test:platform && npm run test:runtime && npm run test:srv-order-sync && npm run test:order-sync-coordinator && npm run test:douyin-protobuf",
+    "build": "npm run build:frontend",
+    "build:backend": "powershell -ExecutionPolicy Bypass -File scripts/build-backend.ps1",
+    "package": "npm run build:frontend && npm run build:backend && npm --prefix electron run package",
+    "package:dir": "npm run build:frontend && npm run build:backend && npm --prefix electron run package:dir"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@babel/generator": "^7.29.8",
+    "@babel/parser": "^7.29.8",
+    "@babel/traverse": "^7.29.8",
+    "@babel/types": "^7.29.8",
+    "esbuild": "^0.28.1"
+  },
+  "private": true
+}

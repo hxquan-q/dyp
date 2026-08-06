@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Electron Print</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #fff;
+      }
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      #print-root {
+        margin: 0;
+        padding: 0;
+      }
+      @media print {
+        html,
+        body,
+        #print-root {
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+        }
+      }
+      @page {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="print-root"></div>
+    <script>
+      const root = document.getElementById('print-root')
+
+      function waitForImages(scope) {
+        const images = Array.from(scope.querySelectorAll('img'))
+        if (!images.length) return Promise.resolve()
+        return Promise.all(images.map((img) => new Promise((resolve) => {
+          if (img.complete) {
+            resolve()
+            return
+          }
+          const timer = setTimeout(resolve, 8000)
+          const done = () => {
+            clearTimeout(timer)
+            resolve()
+          }
+          img.onload = done
+          img.onerror = done
+        })))
+      }
+
+      function fitOverflowingLabels() {
+        const labels = Array.from(root.querySelectorAll('.print-label'))
+        labels.forEach((label) => {
+          const content = label.querySelector('.print-content')
+          if (!content) return
+          content.style.transform = ''
+          content.style.width = '100%'
+          content.style.height = '100%'
+
+          const labelRect = label.getBoundingClientRect()
+          const contentWidth = Math.max(content.scrollWidth, content.getBoundingClientRect().width)
+          const contentHeight = Math.max(content.scrollHeight, content.getBoundingClientRect().height)
+          if (!labelRect.width || !labelRect.height || !contentWidth || !contentHeight) return
+
+          const scale = Math.min(labelRect.width / contentWidth, labelRect.height / contentHeight, 1)
+          if (scale < 1) {
+            content.style.width = `${100 / scale}%`
+            content.style.height = `${100 / scale}%`
+            content.style.transform = `scale(${scale})`
+          }
+        })
+      }
+
+      if (!window.electronPrintBridge) {
+        throw new Error('Electron print bridge is not available')
+      }
+
+      window.electronPrintBridge.onLoadContent(async (payload) => {
+        const jobId = payload && payload.jobId
+        try {
+          root.innerHTML = String(payload && payload.html || '')
+          if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready
+          }
+          await waitForImages(root)
+          fitOverflowingLabels()
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+          await window.electronPrintBridge.contentLoaded(jobId)
+        } catch (error) {
+          await window.electronPrintBridge.contentFailed(jobId, error && error.message ? error.message : String(error))
+        }
+      })
+    </script>
+  </body>
+</html>

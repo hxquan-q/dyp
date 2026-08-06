@@ -1,0 +1,67 @@
+{
+  "name": "koudanbao-desktop",
+  "version": "1.1.2",
+  "desktopReleaseNotes": "1、优化抖音昵称解密异常处理;\n2、支持同一账号多设备协同直播;\n3、优化异常退出后的恢复体验;\n4、增强运行安全保护;\n5、优化订单同步问题诊断",
+  "description": "扣单宝桌面客户端",
+  "main": "main.js",
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/",
+      "/\\.worktrees/",
+      "\\.d\\.ts$"
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.0",
+    "jszip": "^3.10.1",
+    "pako": "^2.1.0",
+    "ws": "^8.18.0"
+  },
+  "scripts": {
+    "start": "electron .",
+    "package": "electron-builder --win",
+    "package:dir": "electron-builder --win dir",
+    "package:portable": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron-builder": "^26.0.0",
+    "electron": "^43.2.0"
+  },
+  "build": {
+    "appId": "com.koudanbao.desktop",
+    "productName": "扣单宝",
+    "asar": true,
+    "directories": {
+      "output": "../dist"
+    },
+    "files": [
+      "**/*",
+      "!logs/**",
+      "!*.log",
+      "!node_modules/.cache/**"
+    ],
+    "extraResources": [
+      {
+        "from": "../backend-dist/koudanbao-backend.exe",
+        "to": "backend/koudanbao-backend.exe"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "resources/app-icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "author": "扣单宝本地重建"
+}

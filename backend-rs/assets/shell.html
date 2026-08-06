@@ -1,0 +1,381 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="robots" content="noindex,nofollow"/><title>扣数宝</title><link rel="stylesheet" href="/build/assets/app-CVK6h-fN.css"/><script data-page="app" type="application/json">@@SCRIPT_DATA@@</script><script>window.__KDB_DATA__ = @@SCRIPT_DATA@@;</script><script>window._csrf = '@@CSRF@@';</script></head><body><div id="app-boot-loading"></div><div id='app' data-page='@@DATA_PAGE_ATTR@@'></div>
+    <script>
+(function () {
+  // 若存在真实 preload 桥（Electron 桌面端），不要覆盖——让主进程处理所有 IPC。
+  if (window.electronAPI && typeof window.electronAPI.openPlatformLogin === 'function') return;
+  var _fetch = window.fetch.bind(window);
+  var _mockState = null;
+  var _mockRuntimeShopId = null;
+  var _mockStatuses = {};
+
+  function _buildMockStatuses(shops) {
+    shops = Array.isArray(shops) ? shops : [];
+    var map = {};
+    shops.forEach(function (shop) {
+      var code = shop.platform_code || 'douyin';
+      var id = Number(shop.id || shop.shop_id || 0);
+      var key = String(code + '-' + id);
+      map[key] = {
+        available: true,
+        platformCode: code,
+        shopId: id,
+        status: 'connected',
+        nickname: shop.shop_name || shop.live_room_name || 'Mock店铺',
+        roomId: shop.live_id || null,
+        connectionStatus: 'connected',
+        error: null,
+        capabilities: {
+          live: { state: 'ready' },
+          order: { state: 'ready' },
+          remark: { state: 'ready' },
+          identity: { state: 'ready' },
+          storeAccess: { state: 'ready' }
+        },
+        authSafetyUntil: null,
+        lastSeenAt: Date.now()
+      };
+    });
+    return map;
+  }
+
+  window.electronAPI = {
+    shop: {
+      bootstrap: function (params) {
+        var shops = Array.isArray(params && params.shops) ? params.shops : [];
+        _mockStatuses = _buildMockStatuses(shops);
+        return Promise.resolve({ success: true, data: _mockStatuses });
+      },
+      status: function (params) {
+        if (params && params.shopId) {
+          var found = null;
+          for (var key in _mockStatuses) {
+            if (_mockStatuses[key].shopId === Number(params.shopId)) {
+              found = _mockStatuses[key];
+              break;
+            }
+          }
+          return found
+            ? Promise.resolve({ success: true, data: found })
+            : Promise.resolve({ success: false, error: '店铺未找到' });
+        }
+        return Promise.resolve({ success: true, data: _mockStatuses });
+      },
+      deauthorize: function (params) {
+        var shopId = params && params.shopId;
+        var platformCode = (params && params.platformCode) || 'douyin';
+        if (shopId) {
+          var toDelete = [];
+          for (var key in _mockStatuses) {
+            if (_mockStatuses[key].shopId === Number(shopId) &&
+                _mockStatuses[key].platformCode === platformCode) {
+              toDelete.push(key);
+            }
+          }
+          toDelete.forEach(function (k) { delete _mockStatuses[k]; });
+          _fetch('/shops/' + shopId, { method: 'DELETE' }).catch(function () {});
+        }
+        return Promise.resolve({ success: true });
+      },
+      openCloudPrintAuthorization: function (params) {
+        return _fetch('/shops/platform-app/oauth-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            platform_code: (params && params.platformCode) || 'douyin',
+            shop_id: (params && params.shopId) || null
+          })
+        }).then(function (r) { return r.json(); }).then(function (resp) {
+          if (!resp.success || !resp.data || !resp.data.url) {
+            throw new Error(resp.message || '订单店铺授权链接返回异常，请重试');
+          }
+          _mockState = resp.data.state;
+          _mockRuntimeShopId = Math.floor(Math.random() * 899999) + 100000;
+          setTimeout(function () {
+            var successUrl = 'https://www.beikedingdan.com/sso-api/user/auth/msg?type=success&state=' + _mockState;
+            if (window._onCloudPrintAuthSuccess) {
+              window._onCloudPrintAuthSuccess({ url: successUrl });
+            }
+          }, 500);
+          return {
+            success: true,
+            attemptId: 'mock-attempt-' + _mockRuntimeShopId,
+            runtimeShopId: _mockRuntimeShopId,
+            authorizationMode: 'reconnect'
+          };
+        });
+      },
+      collectCloudPrintAuthorization: function (params) {
+        var rtid = (params && params.runtimeShopId) || _mockRuntimeShopId;
+        if (!_mockState) {
+          rtid = rtid || Math.floor(Math.random() * 899999) + 100000;
+        }
+        var platformCode = (params && params.platformCode) || 'douyin';
+        return _fetch('/shops/platform-app/authorization', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            platform_code: platformCode,
+            state: _mockState || '',
+            auth_subject: 'order_shop',
+            runtimeShopId: rtid,
+            attemptId: (params && params.attemptId) || null,
+            authorizationScope: (params && params.authorizationScope) || null,
+            platform_shop_id: 'mock-douyin-' + (rtid || Date.now()),
+            shop_name: '抖音订单店铺',
+            live_room_name: '抖音订单店铺',
+            authorization_scope: { stepKeys: ['store'] }
+          })
+        }).then(function (r) { return r.json(); }).then(function (resp) {
+          if (!resp.success) {
+            throw new Error(resp.message || '授权信息采集失败');
+          }
+          var shopId = resp.data && resp.data.shop_id;
+          if (!shopId) throw new Error('授权成功但未返回店铺ID');
+          var key = platformCode + '-' + shopId;
+          _mockStatuses[key] = {
+            available: true,
+            platformCode: platformCode,
+            shopId: Number(shopId),
+            status: 'connected',
+            nickname: '抖音订单店铺',
+            roomId: null,
+            connectionStatus: 'connected',
+            error: null,
+            capabilities: {
+              live: { state: 'ready' },
+              order: { state: 'ready' },
+              remark: { state: 'ready' },
+              identity: { state: 'ready' },
+              storeAccess: { state: 'ready' }
+            },
+            authSafetyUntil: null,
+            lastSeenAt: Date.now()
+          };
+          return {
+            success: true,
+            session: { platformCode: platformCode, cookies: 'mock_cookie', sessionId: '' },
+            shopMetadata: {
+              platformShopId: 'mock-douyin-' + shopId,
+              shopName: '抖音订单店铺',
+              shopCurl: 'mock://curl/' + shopId,
+              liveId: null,
+              liveAvatarUrl: null
+            },
+            authorizationMode: 'reconnect',
+            attemptId: (params && params.attemptId) || null,
+            runtimeShopId: rtid
+          };
+        });
+      },
+      authorize: function (params) {
+        var platformCode = (params && params.platformCode) || 'douyin';
+        var subject = (params && params.authSubject) || (params && params.authorizationSubject) || 'live';
+        return _fetch('/shops/platform-app/authorization', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            platform_code: platformCode,
+            auth_subject: subject,
+            shop_name: platformCode === 'douyin' ? '抖音直播间' : platformCode + '直播间',
+            live_room_name: platformCode === 'douyin' ? '抖音直播间' : platformCode + '直播间',
+            live_id: 'mock-live-' + Math.floor(Math.random() * 899999) + 100000,
+            platform_shop_id: 'mock-' + platformCode + '-' + Date.now(),
+            authorization_scope: { stepKeys: ['live'] }
+          })
+        }).then(function (r) { return r.json(); }).then(function (resp) {
+          var shopId = resp && resp.data && resp.data.shop_id;
+          return { success: true, data: { status: 'connected', shopId: Number(shopId || 0), platformCode: platformCode } };
+        });
+      },
+      authorizeWechat: function (params) {
+        var shopId = (params && params.channelsShopId) || 'mock-channels-' + Date.now();
+        return _fetch('/shops/platform-app/authorization', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            platform_code: 'channels',
+            auth_subject: 'live',
+            shop_name: '视频号直播间',
+            live_room_name: '视频号直播间',
+            live_id: shopId,
+            platform_shop_id: shopId,
+            authorization_scope: { stepKeys: ['live'] }
+          })
+        }).then(function (r) { return r.json(); }).then(function (resp) {
+          return { success: true, data: { status: 'connected', shopId: Number((resp && resp.data && resp.data.shop_id) || 0), platformCode: 'channels' } };
+        });
+      },
+      rebind: function (params) {
+        return Promise.resolve({ success: true, data: { status: 'connected' } });
+      },
+      commitAuthorization: function (params) {
+        // Bind the order shop for real: forward to /shops/finalize-authorization so the
+        // order-scope shop record is persisted (previously this was a hardcoded no-op).
+        var p = params || {};
+        var sid = p.shopId || p.shop_id || p.platform_shop_id || p.id || null;
+        return _fetch('/shops/finalize-authorization', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            platform_code: p.platformCode || p.platform_code || 'douyin',
+            shop_name: p.shop_name || p.shopName || '抖音店铺',
+            platform_shop_id: sid,
+            live_id: p.live_id || p.liveId || null,
+            auth_subject: 'order',
+            authorization_scope: p.authorization_scope || { stepKeys: ['store', 'order'] },
+            raw_data: p.raw_data || p.rawData || p
+          })
+        }).then(function (r) {
+          return { success: true, data: { status: 'connected', shop_id: (r && r.data && r.data.shop_id) || null } };
+        });
+      },
+      switch: function (params) {
+        return _fetch('/shops/switch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ shop_id: params && params.shopId, dashboard_row_id: params && params.dashboardRowId })
+        }).then(function () { return { success: true }; });
+      },
+      channelsGetQr: function () {
+        return Promise.resolve({ success: true, data: { qrCodeUrl: 'mock://qr', token: 'mock-channels-token', expiresAt: Date.now() + 120000 } });
+      },
+      channelsCheckLogin: function () {
+        return Promise.resolve({ success: true, data: { loggedIn: false, status: 'waiting' } });
+      },
+      channelsBindSession: function (params) {
+        return Promise.resolve({ success: true, data: { bound: true } });
+      }
+    },
+    onConnectionStatus: function (handler) {
+      // No-op: desktop connectivity is always available in this mock
+      if (handler && typeof handler === 'function') {
+        handler({ type: 'connection', status: 'connected' });
+      }
+      return function () {};
+    },
+    onDanmakuStats: function (handler) {
+      // No-op: danmaku stats not needed in mock
+      if (handler && typeof handler === 'function') {
+        handler({ type: 'danmaku', stats: { viewerCount: 0, likeCount: 0 } });
+      }
+      return function () {};
+    },
+    onLiveRoomInfo: function (handler) {
+      // No-op: live room info not needed in mock
+      if (handler && typeof handler === 'function') {
+        handler({ type: 'liveRoom', roomId: null, status: 'idle' });
+      }
+      return function () {};
+    },
+    onDanmakuDisplay: function (handler) {
+      // No-op: danmaku display not needed in mock
+      if (handler && typeof handler === 'function') {
+        handler({ type: 'danmaku', visible: false });
+      }
+      return function () {};
+    },
+    openPlatformLogin: function () { return Promise.resolve({ success: true }); },
+    disconnectPlatform: function () {
+      return _fetch('/shops/disconnect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+        .then(function () { return { success: true }; });
+    },
+    openDesktopDownloadPage: function () { return Promise.resolve({ success: true }); },
+    getAppVersion: function () { return Promise.resolve('1.1.2'); },
+    getDeviceInfo: function () {
+      return Promise.resolve({ deviceId: 'mock-device-0001', platform: 'win32', appVersion: '1.1.2', deviceName: 'Electron Client' });
+    },
+    uploadLogs: function () { return Promise.resolve({ success: true, id: 'mock-log-' + Date.now() }); },
+    orders: {
+      sync: function (params) {
+        return _fetch('/api/electron/orders/server-sync', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(params || {})
+        }).then(function (r) { return r.json(); }).then(function (resp) {
+          return { success: true, status: 'success', count: 0, syncedOrders: [], message: '本地mock：无真实订单' };
+        });
+      },
+      onSyncProgress: function () { return function () {}; },
+      onLiveSyncStatus: function () { return function () {}; },
+      retryDecryptAndRemark: function () { return Promise.resolve({ success: true, data: { job: { status: 'success' } } }); },
+      batchRemark: function () { return Promise.resolve({ success: true, data: { job: { status: 'success' } } }); },
+      resolveIdentity: function (params) {
+        return Promise.resolve({ success: true, data: { nickname: (params && params.nickname) || '', identity: null } });
+      },
+      getNickname: function (params) { return Promise.resolve({ success: true, data: { nickname: (params && params.nickname) || '' } }); },
+      decryptNickname: function (params) { return Promise.resolve({ success: true, data: { nickname: (params && params.nickname) || '' } }); }
+    },
+    printer: {
+      diagnose: function () { return Promise.resolve({ success: true, data: { status: 'ok', printers: [] } }); }
+    },
+    electronPrint: {
+      getPrinters: function () {
+        return Promise.resolve({ success: true, printers: ["扣单宝-Mock-打印机", "扣单宝-Mock-打印机-2"], data: ["扣单宝-Mock-打印机", "扣单宝-Mock-打印机-2"] });
+      },
+      printLabels: function () { return Promise.resolve({ success: true, printed: true }); },
+      diagnose: function () { return Promise.resolve({ success: true, data: { status: 'ok' } }); },
+      getSettings: function () { return Promise.resolve({ success: true, settings: { closeBehavior: 'tray', askOnClose: true, printProvider: 'electron' } }); },
+      updateSettings: function (settings) { return Promise.resolve({ success: true, settings: settings }); }
+    },
+    onShopStatusChanged: function () { return function () {}; },
+    onAuthorizationExpired: function () { return function () {}; },
+    onSupportWindowClosed: function () { return function () {}; },
+    onLiveOrdersSynced: function () { return function () {}; },
+    onLiveOrderSyncStatus: function () { return function () {}; },
+    onAppUpdateAvailable: function () { return function () {}; },
+    onAppUpdateProgress: function () { return function () {}; },
+    onAppUpdateDownloaded: function () { return function () {}; },
+    onAppUpdateError: function () { return function () {}; },
+    retryAppUpdateDownload: function () { return Promise.resolve({ success: true }); },
+    installAppUpdate: function () { return Promise.resolve({ success: true }); },
+    quitApp: function () { return Promise.resolve({ success: true }); },
+    setAlwaysOnTop: function () { return Promise.resolve({ success: true }); }
+  };
+})()
+</script>
+<script>
+(function () {
+  if (window.electronAPI && window.electronAPI.startDanmakuSession) return;
+  var api = window.electronAPI || (window.electronAPI = {});
+  var listeners = {};
+  var timer = null;
+  var seq = 0;
+  var nicknames = ["小明", "小红", "小黑", "阿强", "静静", "老王", "小龙", "燕子"];
+  var gridNo = 0;
+  function emit(type, data) { (listeners[type] || []).forEach(function (cb) { try { cb(data); } catch (e) {} }); }
+  function spawn() {
+    if (!listeners.resolved) return;
+    seq += 1;
+    var nickname = nicknames[seq % nicknames.length];
+    var commentId = "mock-" + Date.now() + "-" + seq;
+    gridNo = (gridNo % 12) + 1;
+    // 内容带随机号码，触发 anyNumber 命中演示（宫格入格 + 打印数据），贴近真实扣中
+    var content = (seq % 3 === 0) ? "来了来了，还有" + gridNo + " 吗" : (seq % 3 === 1) ? "正在拍" + gridNo : String(gridNo) + " 黑 L";
+    emit("display", [{ commentId: commentId, nickname: nickname, content: content, type: "chat", timestamp: new Date().toISOString() }]);
+    emit("resolved", [{
+      commentId: commentId,
+      nickname: nickname,
+      content: content,
+      matched_content: String(gridNo),
+      grid_no: gridNo,
+      batch_no: "MOCKBATCH",
+      status: "matched",
+      num_index: seq,
+      product_relation: { price: String(gridNo), product_no: "A" + String(gridNo).padStart(3, "0") }
+    }]);
+  }
+  api.startDanmakuSession = async function () { emit("status", { active: true }); timer = setInterval(spawn, 1500); return { success: true }; };
+  api.stopDanmakuSession = async function () { if (timer) { clearInterval(timer); timer = null; } emit("status", { active: false }); return { success: true }; };
+  api.resetDanmakuBatch = async function () { return { success: true }; };
+  api.resetLuckyBagBatch = async function () { return { success: true }; };
+  api.reloadDanmakuConfig = async function () { return { success: true }; };
+  api.onDanmakuDisplay = function (cb) { (listeners.display = listeners.display || []).push(cb); return function () { listeners.display = []; }; };
+  api.onDanmakuResolved = function (cb) { (listeners.resolved = listeners.resolved || []).push(cb); return function () { listeners.resolved = []; }; };
+  api.onLiveStatus = function (cb) { (listeners.status = listeners.status || []).push(cb); return function () { listeners.status = []; }; };
+  api.onPrintResults = function (cb) { (listeners.print = listeners.print || []).push(cb); return function () { listeners.print = []; }; };
+  api.onLuckyBagBatchReset = function (cb) { return function () {}; };
+  api.clientSettings = {
+    get: async function () { return { success: true, settings: { closeBehavior: "tray", askOnClose: true, printProvider: "electron" } }; },
+    update: async function (s) { return { success: true, settings: s }; }
+  };
+})();
+</script>
+<script type="module">import("/build/assets/app-Buzwood0.js?v=" + Date.now());</script></body></html>

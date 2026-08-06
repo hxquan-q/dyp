@@ -1,0 +1,38 @@
+# ============================================================
+# 扣单宝 — 版本库忽略规则
+# ============================================================
+
+# 依赖
+node_modules/
+
+# 构建产物（由 npm run build:* / CI 生成）
+backend-rs/target/
+backend-dist/
+frontend-src/dist/
+electron/dist/
+
+# 逆向归档（含官方原版产物，不进版本库）
+legacy/
+
+# 运行数据与日志
+*.log
+server.out
+global-store.json
+
+# 开发截图 / 临时文件
+login-window.png
+dashboard_run.png
+*.tmp
+
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.suo
+
+# 构建错误日志
+build-errors.txt
