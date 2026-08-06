@@ -38,7 +38,7 @@ Electron 桌面端 (electron/main.js)
   ├── 69 个 IPC handler（mock；真实能力逐步落地：打印/抖音弹幕）
   └── 自动拉起本地后端（backend-dist/koudanbao-backend.exe --print-json-ready）
         │ HTTP (127.0.0.1:8787, 动态端口)
-Inertia SPA (frontend-src/, React)        ← 统一投放重建工程（M4 完成前保留双前端开关）
+Inertia SPA (frontend-src/, React)        ← 统一投放重建工程（M4 已移除双前端开关）
         │ HTTP + Inertia data-page
 Rust 后端 (backend-rs/, axum)             ← 本地引擎，永不消失
   ├── Inertia 页面渲染（shell.html + data-page 注入）
@@ -119,11 +119,16 @@ python tests/test-engine-parity.py <py_url> <rust_url>        # 引擎差分 432
 
 ## 重构里程碑（2026-08-06 启动）
 
-- **M1 仓库基建** ✅ git 初始化 + 逆向产物归档 legacy + 资源收拢 backend-rs
-- **M2 主进程真实能力**：ElectronPrint 系统打印 + 抖音真实弹幕（CDP 拦截→扣数→打印）
-- **M3 跨平台构建**：electron-builder 双平台 + Rust mac 编译 + GitHub Actions CI
-- **M4 前端收敛+工程化**：统一重建前端投放 + 拆 2503 行 Index.tsx / 1855 行 reverse-runtime / preset JSON / zustand / Vitest
-- **M5 契约固化**：B1 契约源 + TS 类型生成 + store schema 版本化 + auth.mode 下发 + /api/auth/* 契约
-- **M6 测试收尾**：引擎差分 golden 基线 + 跨平台测试 + mac 真机冒烟
+- **M1 仓库基建** ✅ git 初始化 + GitHub (hxquan-q/dyp) + 逆向产物归档 legacy + 资源收拢 backend-rs
+- **M2 主进程真实能力** ✅ ElectronPrint 系统打印（跨平台）+ 抖音真实弹幕（CDP 拦截→扣数→打印）；
+  直播间地址弹窗收集 + 本地记忆；无地址时 mock 兜底
+- **M3 跨平台构建** ✅ electron-builder 双平台（mac dmg/zip + win nsis/portable）+
+  Node 跨平台构建脚本 + GitHub Actions CI（win/macos-13 x64/macos-14 arm64）
+- **M4 前端收敛** ✅ 统一投放（移除双前端开关）+ preset-templates → JSON + Vitest 基线（13 项）；
+  ⏳ 大文件拆分（2503 行 Index.tsx / 1855 行 reverse-runtime）/ zustand / 组件测试为后续
+- **M5 契约固化** ✅ auth.mode 机制（`--auth-mode local|cloud`，local 零门槛 / cloud 登录门，
+  前端零改动切换）；⏳ 完整 B1 契约源 + TS 类型生成为后续
+- **M6 测试收尾** ✅ 引擎差分 golden 基线（432 项固化）+ 协议/golden 联合验证；
+  ⏳ mac 真机冒烟、跨平台测试脚本适配为后续
 
 详细决策记录见 `docs/ARCHITECTURE.md` 与 `AGENTS.md`。
