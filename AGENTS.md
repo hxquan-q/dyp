@@ -18,7 +18,7 @@
 | 桌面壳 | Electron ^43 + electron-builder ^26 + electron-updater | 可用（真实平台登录窗口 + cookie 采集） |
 | 前端 | React 19 + TypeScript 7 + Vite 8 + **Inertia.js 3** + Tailwind 4 + Radix/shadcn 风格 | 17 页面全部可运行 |
 | **后端（主力）** | **Rust (axum 0.8) — `backend-rs/`** | ✅ 已迁移完成（2026-08-06） |
-| 后端（参考） | Python 3.14 纯标准库 — `backend/`（http.server） | 保留为契约参考/回退 |
+| 后端（参考） | Python 3.14 纯标准库 — `legacy/backend-python/`（http.server） | 已归档，契约参考/差分对照 |
 | 主进程还原 | `electron/main/index.js`（17079 行 webpack 还原，**只读参考**） | 7 平台驱动/弹幕调度/订单解密 |
 
 ## 三、架构与数据流
@@ -53,17 +53,23 @@ E:\dyp\
 │   ├── src/engine.rs    #   扣数引擎（11 规则，21 项单测）
 │   ├── src/inertia.rs   #   Inertia 页面层（page/base_props/build_page_for）
 │   ├── src/{shops,templates,store,state,cainiao_ws,util,domain,log}.rs
-│   └── assets/shell.html #  Inertia 壳模板（AST 从 server.py 精确抽取，勿手改 JS 内容）
-├── backend/             # Python 参考实现（server.py 2716 行 + deduction_engine.py + mock_cainiao_ws.py）
-├── backend-dist/        # 构建产物：koudanbao-backend.exe (4.7MB) + assets/static/shell.html
+│   ├── assets/          #   运行资源：前端部署产物(app-Buzwood0.js/css) + shell.html
+│   ├── static/          #   静态图片/图标
+│   └── default_custom_config.json  # 模板画布字段目录
+├── backend-dist/        # 构建产物（gitignore）：koudanbao-backend.exe + assets/static/shell.html
 ├── frontend-src/        # ★★ 重建 React 工程（构建产物文件名硬对齐 app-Buzwood0.js）
-├── electron/            # 桌面壳（main.js）+ 主进程还原（main/index.js 只读）
-├── electron-original/   # 官方原版对照（preload 逐字节一致）
-├── frontend/            # 官方原版 bundle 对照（app-bundle.min.js）
-├── docs/                # 架构/前端/主进程导读 + REVERSE-GAP-INVENTORY.md
+├── electron/            # 桌面壳（main.js 可运行壳；preload/platform-tabs/resources 逐字节一致）
 ├── tests/               # 协议测试/引擎差分/JS 逻辑测试
-├── tools/               # 逆向工具 + extract-shell.py + patch-bundle.js
-└── scripts/             # build-backend.ps1 / test-backend-protocol.ps1
+├── docs/                # 架构/前端/主进程导读 + REVERSE-GAP-INVENTORY.md
+├── tools/               # 生产工具（patch-bundle.js / verify-reconstruction.py / extract-shell.py）
+├── scripts/             # build-backend.ps1 / test-backend-protocol.ps1
+└── legacy/              # ★ 逆向归档（gitignore，不进版本库）
+    ├── backend-python/      # Python 参考实现（完整可运行，差分/契约参考）
+    ├── official-bundle/     # 官方原版前端 bundle 对照（版权产物）
+    ├── official-electron/   # 官方原版 dist 对照（版权产物）
+    ├── main-process-reverse/# 主进程 17079 行还原 + reconstructed/explained 模块
+    ├── frontend-reverse-ref/# 前端逆向参考源码
+    └── reverse-tools/       # 逆向脚本（annotate-*/extract-pages/reverse-jsx/utf8-regen）
 ```
 
 ## 五、构建与测试命令（全部在 E:\dyp 根目录执行）
@@ -81,8 +87,8 @@ python tests/test-engine-parity.py <py_url> <rust_url>        # 引擎差分 432
 
 后端启动：
 ```powershell
-backend-dist\koudanbao-backend.exe --host 127.0.0.1 --port 8787   # Rust 版
-# 或 python backend/server.py --host 127.0.0.1 --port 8787        # Python 参考版
+backend-dist\koudanbao-backend.exe --host 127.0.0.1 --port 8787   # Rust 版（主力）
+# Python 参考版已归档：cd legacy/backend-python; python server.py --host 127.0.0.1 --port 8787
 ```
 
 ## 六、约定红线（改动前必读，改后必跑验证）
@@ -102,6 +108,10 @@ backend-dist\koudanbao-backend.exe --host 127.0.0.1 --port 8787   # Rust 版
 ## 七、重构状态（2026-08-06 迁移时点）
 
 ### ✅ 已完成
+- **M1 仓库基建（2026-08-06）**：git init + GitHub remote (hxquan-q/dyp)；逆向产物归档 `legacy/`
+  （gitignore，不进版本库）；运行资源收拢 `backend-rs/`（assets 部署产物/static/default_custom_config.json）；
+  `build-backend.ps1` 资源源改 backend-rs；`electron/main.js` dev 回退改 backend-dist 产物（去 Python）；
+  `resolve_res_dir()` 清理失效候选（cargo check 通过）。
 - **后端 Python → Rust 迁移**：契约逐字节等价。验证：69/69 协议测试、引擎差分 432 项 0 差异、
   21 项 Rust 单测、Inertia 渲染保真。
 - **P0-1** 持久化并发安全（Mutex + 原子写，消除读-改-写竞态）。
@@ -112,17 +122,20 @@ backend-dist\koudanbao-backend.exe --host 127.0.0.1 --port 8787   # Rust 版
 - 新增 `tests/test-engine-parity.py`（双后端差分）与 `tools/extract-shell.py`（shell 模板抽取）。
 
 ### ⏳ 待办（按依赖序）
+0. **M2** 主进程真实能力：ElectronPrint 系统打印实现 + 抖音真实弹幕集成
+   （素材在 `legacy/main-process-reverse/*.reconstructed.js`）。
 1. **B1** 契约源 + TS 类型生成（P2-7，根治字段漂移；P0-2 为验证用例）。
 2. **C1-C3** 前端工程化：拆 `frontend-src/src/Pages/Deduction/Index.tsx`（2503 行）、
    `lib/reverse-runtime.ts`（1855 行）→ 命名模块、`lib/preset-templates.ts`（114KB 单行）→ JSON、
    zustand 弹幕会话状态、Vitest + Testing Library 组件测试。
 3. **D1** Electron 拉起 Rust 后端端到端验证 + order-sync 链路（可用 `$env:KDB_BACKEND_EXE` 指
    向 backend-dist exe 在 dev 模式测试）。
-4. **E1** Python backend 归档切换、verify-reconstruction.py 更新。
+4. **E1** ~~Python backend 归档切换~~ ✅ 已完成（归档 legacy/backend-python）；verify-reconstruction.py 已更新。
+5. **M3** 跨平台构建：electron-builder 双平台 + Rust mac 编译 + GitHub Actions CI。
 
 ## 八、已知坑（踩过）
 
-- **Python 版 `numberWithSymbol` 格式会崩溃**：`backend/deduction_engine.py` 用 `\p{L}`
+- **Python 版 `numberWithSymbol` 格式会崩溃**：`legacy/backend-python/deduction_engine.py` 用 `\p{L}`
   语法但 Python `re` 不支持（`re.PatternError: bad escape \p`）→ 收到含符号数字弹幕时后端崩。
   **Rust 版已用 regex crate 正确修复**；差分测试因此排除该规则。
 - **端口 13528 被占用**：菜鸟 WS mock 绑定失败时仅打日志、不影响主服务（Python/Rust 同行为）。
