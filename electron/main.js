@@ -329,7 +329,8 @@ function openPlatformLogin(platformCode, shopId, loginUrl, subject) {
       }
     }
     win.webContents.on('did-navigate', (_e, targetUrl) => checkLoggedIn(targetUrl))
-    win.webContents.on('did-navigate-in-page', (_e, _isMainFrame, targetUrl) => checkLoggedIn(targetUrl))
+    // 注意：did-navigate-in-page 签名 (event, url, isMainFrame, ...)，url 是第二参数
+    win.webContents.on('did-navigate-in-page', (_e, url) => checkLoggedIn(url))
     win.webContents.on('did-finish-load', () => injectFinishButton(win))
     // 窗口关闭兜底：若已登录则采集保存
     win.on('close', () => {

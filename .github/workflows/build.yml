@@ -1,12 +1,9 @@
-# 扣单宝 双平台构建流水线（Windows + macOS）
+# 扣单宝 Windows 构建流水线（macOS 打包暂缓，配置保留注释）
 # ==================================================================
-# matrix：
-#   windows-latest  → nsis + portable（x64）
-#   macos-13        → dmg + zip（Intel x64）
-#   macos-14        → dmg + zip（Apple Silicon arm64）
-# 说明：
-#   - 本地阶段不签名不公证（mac Gatekeeper / win SmartScreen 由用户手动放行）
-#   - 商业化前接入：Apple Developer 公证 + Windows 代码签名证书 + 发布 Release
+# 当前阶段：仅打 Windows 包（nsis + portable，x64）。
+# macOS 打包（macos-13 x64 / macos-14 arm64 → dmg + zip）：
+#   配置与脚本均已就绪，未来启用时取消下方 matrix include 注释即可。
+#   注意：mac 包必须在 macOS runner 打，且商业化前需 Apple 公证 + 签名。
 name: build
 
 on:
@@ -22,10 +19,12 @@ jobs:
         include:
           - os: windows-latest
             electron_args: --win
-          - os: macos-13
-            electron_args: --mac --x64
-          - os: macos-14
-            electron_args: --mac --arm64
+          # ── macOS（暂缓）──────────────────────────────────────────
+          # - os: macos-13
+          #   electron_args: --mac --x64
+          # - os: macos-14
+          #   electron_args: --mac --arm64
+          # ──────────────────────────────────────────────────────────
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
