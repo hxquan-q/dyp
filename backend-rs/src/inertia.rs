@@ -38,6 +38,7 @@ pub fn base_props(state: &AppState, sess: &mut Value) -> Value {
             "user": if authed { sess.get("user").cloned() } else { None },
             "tenant": if authed { sess.get("tenant").cloned() } else { None },
         },
+        "authMode": state.auth_mode.clone(),
         "shops": if authed { sess.get("shops").cloned().unwrap_or_else(|| json!([])) } else { json!([]) },
         "platforms": crate::domain::platforms(),
         "subscriptionSummary": if authed { subscription_summary() } else { Value::Null },
@@ -50,7 +51,6 @@ pub fn base_props(state: &AppState, sess: &mut Value) -> Value {
         o.insert("flash_success".into(), Value::Null);
         o.insert("flash_error".into(), Value::Null);
     }
-    let _ = state;
     props
 }
 

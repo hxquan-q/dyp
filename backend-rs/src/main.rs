@@ -94,7 +94,9 @@ struct Args {
     data_dir: Option<String>,
     #[arg(long, help = "服务启动后输出一行 JSON ready 事件，便于 Electron/脚本读取动态端口")]
     print_json_ready: bool,
-    #[arg(long, help = "关闭自动登录；仍可用任意手机号+任意密码 POST /login")]
+    #[arg(long, default_value = "local", help = "认证模式：local（本地零门槛）/ cloud（未来云账号登录）")]
+    auth_mode: String,
+    #[arg(long, help = "关闭自动登录；仍可用任意手机号+任意密码 POST /login（cloud 模式下生效）")]
     no_auto_login: bool,
 }
 
@@ -104,24 +106,7 @@ async fn main() {
     let frozen = is_frozen();
 
     let res_dir = resolve_res_dir();
-    let assets_dir = {
-        // 双前端投放：KOUDANBAO_FRONTEND=recon → frontend-src/dist/assets（对齐 Python）
-        if std::env::var("KOUDANBAO_FRONTEND").map(|v| v == "recon").unwrap_or(false) {
-            let recon = res_dir
-                .parent()
-                .unwrap_or(std::path::Path::new("."))
-                .join("frontend-src")
-                .join("dist")
-                .join("assets");
-            if recon.join("app-Buzwood0.js").is_file() {
-                recon
-            } else {
-                res_dir.join("assets")
-            }
-        } else {
-            res_dir.join("assets")
-        }
-    };
+    let assets_dir = res_dir.join("assets");
     let static_dir = res_dir.join("static");
     let shell_path = resolve_shell_path(&res_dir);
 
@@ -134,12 +119,15 @@ async fn main() {
         let _ = std::fs::create_dir_all(&data_dir);
     }
 
-    let auto_login = !args.no_auto_login;
+    let auth_mode = if args.auth_mode == "cloud" { "cloud".to_string() } else { "local".to_string() };
+    // auth.mode=local（默认）：永远零门槛自动登录；cloud 模式下可用 --no-auto-login 开启登录门
+    let auto_login = auth_mode == "local" || !args.no_auto_login;
     let state = Arc::new(state::AppState::new(
         data_dir.clone(),
         assets_dir.clone(),
         static_dir,
         auto_login,
+        auth_mode.clone(),
     ));
     // 预载 shell 模板（启动即校验资源，缺则提前暴露）
     let shell = std::fs::read_to_string(&shell_path).unwrap_or_else(|e| {
@@ -180,6 +168,7 @@ async fn main() {
     println!("  listen     : {base}");
     println!("  data dir   : {}", data_dir.display());
     println!("  assets     : {}", assets_dir.display());
+    println!("  auth-mode  : {auth_mode}");
     println!("  auto-login : {auto_login}");
     println!("  login page : {base}/login");
     println!("  dashboard  : {base}/dashboard");

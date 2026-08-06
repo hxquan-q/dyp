@@ -123,6 +123,7 @@ function UserPanel() {
   const { showToast } = useToast()
   const props = page.props ?? {}
   const auth = props.auth ?? {}
+  const authMode = props.authMode ?? 'local'
   const user = auth.user ?? { name: '未登录' }
   const [open, setOpen] = React.useState(false)
   const menuRef = React.useRef<HTMLLIElement>(null)
@@ -175,10 +176,12 @@ function UserPanel() {
                   <Upload className="h-4 w-4" />
                   上传日志
                 </button>
-                <button type="button" className="flex items-center gap-2 rounded-md px-3 py-2 text-red-600 hover:bg-red-50" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4" />
-                  退出登录
-                </button>
+                {authMode !== 'local' && (
+                  <button type="button" className="flex items-center gap-2 rounded-md px-3 py-2 text-red-600 hover:bg-red-50" onClick={handleLogout}>
+                    <LogOut className="h-4 w-4" />
+                    退出登录
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -188,10 +191,11 @@ function UserPanel() {
   )
 }
 
-/** 顶栏：侧边栏开关 + 订阅到期/续费 */
+/** 顶栏：侧边栏开关 + 本地版标识 + 订阅到期/续费 */
 function TopBar() {
   const page = usePage() as any
   const props = page.props ?? {}
+  const authMode = props.authMode ?? 'local'
   const subscription = props.subscriptionSummary ?? null
   const isActive = Boolean(subscription?.is_active)
   const endTime = subscription?.end_time ? new Date(subscription.end_time).toLocaleDateString('zh-CN') : ''
@@ -202,10 +206,17 @@ function TopBar() {
         <PanelLeft className="h-5 w-5" />
       </button>
       <div className="flex items-center gap-3 text-sm">
+        {authMode === 'local' && (
+          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700" title="本地版：数据仅存本机，无需登录">
+            本地版
+          </span>
+        )}
         {endTime && <span className="text-gray-600">到期时间: {endTime}</span>}
-        <Link href="/settings/order-subscriptions" className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-gray-700 hover:bg-gray-50">
-          {isActive ? '续费' : '开通'}
-        </Link>
+        {authMode !== 'local' && (
+          <Link href="/settings/order-subscriptions" className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-gray-700 hover:bg-gray-50">
+            {isActive ? '续费' : '开通'}
+          </Link>
+        )}
       </div>
     </div>
   )

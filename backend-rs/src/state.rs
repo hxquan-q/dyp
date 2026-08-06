@@ -19,6 +19,8 @@ pub struct AppState {
     pub static_dir: PathBuf,
     pub store_path: PathBuf,
     pub auto_login: bool,
+    /// 认证模式：local（本地零门槛，下发前端显示"本地版"）/ cloud（未来云账号登录）
+    pub auth_mode: String,
     pub shell: OnceLock<String>,
     pub logger: Option<crate::log::Logger>,
     /// global-store.json 内存镜像（唯一真源，磁盘只是投影）
@@ -56,7 +58,7 @@ impl AppState {
         PathBuf::from(".").join(".local").join("share").join("koudanbao")
     }
 
-    pub fn new(data_dir: PathBuf, assets_dir: PathBuf, static_dir: PathBuf, auto_login: bool) -> Self {
+    pub fn new(data_dir: PathBuf, assets_dir: PathBuf, static_dir: PathBuf, auto_login: bool, auth_mode: String) -> Self {
         let store_path = data_dir.join("global-store.json");
         let store = load_store(&store_path);
         let logger = crate::log::Logger::init(&data_dir);
@@ -66,6 +68,7 @@ impl AppState {
             static_dir,
             store_path,
             auto_login,
+            auth_mode,
             shell: OnceLock::new(),
             logger: Some(logger),
             store: Mutex::new(store),
@@ -83,6 +86,7 @@ impl AppState {
             dir.to_path_buf(),
             dir.to_path_buf(),
             true,
+            "local".to_string(),
         )
     }
 
