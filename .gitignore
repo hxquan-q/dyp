@@ -39,3 +39,6 @@ build-errors.txt
 
 # electron-builder 输出
 dist/
+
+# 运行时测试输出
+tests/runtime/out.js

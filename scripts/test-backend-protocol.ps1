@@ -68,6 +68,9 @@ try {
   Write-Host "[test-backend] url=$($ready.url) dataDir=$DataDir"
   $test = Start-Process -FilePath 'python' -ArgumentList @('tests/test_backend_protocol.py', $ready.url) -WorkingDirectory $Root -NoNewWindow -Wait -PassThru
   if ($test.ExitCode -ne 0) { exit $test.ExitCode }
+  # 引擎 golden 校验（M6：复用已启动后端，Rust 单后端比对固化期望）
+  $golden = Start-Process -FilePath 'python' -ArgumentList @('tests/test-engine-parity.py', '--golden', 'tests/engine-golden.json', $ready.url) -WorkingDirectory $Root -NoNewWindow -Wait -PassThru
+  if ($golden.ExitCode -ne 0) { exit $golden.ExitCode }
 } finally {
   if ($proc -and -not $proc.HasExited) {
     try { $proc.Kill($true) } catch { try { $proc.Kill() } catch {} }

@@ -1,0 +1,1762 @@
+{
+ "anyNumber": {
+  "1": [
+   "1",
+   null
+  ],
+  "2": [
+   "2",
+   null
+  ],
+  "3": [
+   "3",
+   null
+  ],
+  "7": [
+   "7",
+   null
+  ],
+  "12": [
+   "12",
+   null
+  ],
+  "13": [
+   "13",
+   null
+  ],
+  "99": [
+   "99",
+   null
+  ],
+  "1234": [
+   "1234",
+   null
+  ],
+  "1.9": [
+   "1.9",
+   null
+  ],
+  "12.5": [
+   "12.5",
+   null
+  ],
+  "abc": [
+   null,
+   null
+  ],
+  "abc12": [
+   "abc12",
+   null
+  ],
+  "A1": [
+   "A1",
+   null
+  ],
+  "abcd1": [
+   "abcd1",
+   null
+  ],
+  "abc1": [
+   "abc1",
+   null
+  ],
+  "12号": [
+   "12号",
+   null
+  ],
+  "拍了": [
+   null,
+   null
+  ],
+  "来一个7号": [
+   "来一个7号",
+   null
+  ],
+  "42¥": [
+   "42¥",
+   null
+  ],
+  "L": [
+   null,
+   null
+  ],
+  "XL": [
+   null,
+   null
+  ],
+  "12L": [
+   "12L",
+   null
+  ],
+  "8 XL": [
+   "8 XL",
+   null
+  ],
+  "hello": [
+   null,
+   null
+  ],
+  "0": [
+   "0",
+   null
+  ],
+  "10": [
+   "10",
+   null
+  ],
+  "50": [
+   "50",
+   null
+  ]
+ },
+ "onlyPureNumber": {
+  "1": [
+   "1",
+   null
+  ],
+  "2": [
+   "2",
+   null
+  ],
+  "3": [
+   "3",
+   null
+  ],
+  "7": [
+   "7",
+   null
+  ],
+  "12": [
+   "12",
+   null
+  ],
+  "13": [
+   "13",
+   null
+  ],
+  "99": [
+   "99",
+   null
+  ],
+  "1234": [
+   "1234",
+   null
+  ],
+  "1.9": [
+   null,
+   null
+  ],
+  "12.5": [
+   null,
+   null
+  ],
+  "abc": [
+   null,
+   null
+  ],
+  "abc12": [
+   null,
+   null
+  ],
+  "A1": [
+   null,
+   null
+  ],
+  "abcd1": [
+   null,
+   null
+  ],
+  "abc1": [
+   null,
+   null
+  ],
+  "12号": [
+   null,
+   null
+  ],
+  "拍了": [
+   null,
+   null
+  ],
+  "来一个7号": [
+   null,
+   null
+  ],
+  "42¥": [
+   null,
+   null
+  ],
+  "L": [
+   null,
+   null
+  ],
+  "XL": [
+   null,
+   null
+  ],
+  "12L": [
+   null,
+   null
+  ],
+  "8 XL": [
+   null,
+   null
+  ],
+  "hello": [
+   null,
+   null
+  ],
+  "0": [
+   "0",
+   null
+  ],
+  "10": [
+   "10",
+   null
+  ],
+  "50": [
+   "50",
+   null
+  ]
+ },
+ "only12": {
+  "1": [
+   "1",
+   null
+  ],
+  "2": [
+   "2",
+   null
+  ],
+  "3": [
+   null,
+   null
+  ],
+  "7": [
+   null,
+   null
+  ],
+  "12": [
+   null,
+   null
+  ],
+  "13": [
+   null,
+   null
+  ],
+  "99": [
+   null,
+   null
+  ],
+  "1234": [
+   null,
+   null
+  ],
+  "1.9": [
+   null,
+   null
+  ],
+  "12.5": [
+   null,
+   null
+  ],
+  "abc": [
+   null,
+   null
+  ],
+  "abc12": [
+   null,
+   null
+  ],
+  "A1": [
+   null,
+   null
+  ],
+  "abcd1": [
+   null,
+   null
+  ],
+  "abc1": [
+   null,
+   null
+  ],
+  "12号": [
+   null,
+   null
+  ],
+  "拍了": [
+   null,
+   null
+  ],
+  "来一个7号": [
+   null,
+   null
+  ],
+  "42¥": [
+   null,
+   null
+  ],
+  "L": [
+   null,
+   null
+  ],
+  "XL": [
+   null,
+   null
+  ],
+  "12L": [
+   null,
+   null
+  ],
+  "8 XL": [
+   null,
+   null
+  ],
+  "hello": [
+   null,
+   null
+  ],
+  "0": [
+   null,
+   null
+  ],
+  "10": [
+   null,
+   null
+  ],
+  "50": [
+   null,
+   null
+  ]
+ },
+ "exclude12": {
+  "1": [
+   null,
+   null
+  ],
+  "2": [
+   null,
+   null
+  ],
+  "3": [
+   "3",
+   null
+  ],
+  "7": [
+   "7",
+   null
+  ],
+  "12": [
+   "12",
+   null
+  ],
+  "13": [
+   "13",
+   null
+  ],
+  "99": [
+   "99",
+   null
+  ],
+  "1234": [
+   "1234",
+   null
+  ],
+  "1.9": [
+   null,
+   null
+  ],
+  "12.5": [
+   null,
+   null
+  ],
+  "abc": [
+   null,
+   null
+  ],
+  "abc12": [
+   null,
+   null
+  ],
+  "A1": [
+   null,
+   null
+  ],
+  "abcd1": [
+   null,
+   null
+  ],
+  "abc1": [
+   null,
+   null
+  ],
+  "12号": [
+   null,
+   null
+  ],
+  "拍了": [
+   null,
+   null
+  ],
+  "来一个7号": [
+   null,
+   null
+  ],
+  "42¥": [
+   null,
+   null
+  ],
+  "L": [
+   null,
+   null
+  ],
+  "XL": [
+   null,
+   null
+  ],
+  "12L": [
+   null,
+   null
+  ],
+  "8 XL": [
+   null,
+   null
+  ],
+  "hello": [
+   null,
+   null
+  ],
+  "0": [
+   "0",
+   null
+  ],
+  "10": [
+   "10",
+   null
+  ],
+  "50": [
+   "50",
+   null
+  ]
+ },
+ "letter3Digit1": {
+  "1": [
+   null,
+   null
+  ],
+  "2": [
+   null,
+   null
+  ],
+  "3": [
+   null,
+   null
+  ],
+  "7": [
+   null,
+   null
+  ],
+  "12": [
+   null,
+   null
+  ],
+  "13": [
+   null,
+   null
+  ],
+  "99": [
+   null,
+   null
+  ],
+  "1234": [
+   null,
+   null
+  ],
+  "1.9": [
+   null,
+   null
+  ],
+  "12.5": [
+   null,
+   null
+  ],
+  "abc": [
+   null,
+   null
+  ],
+  "abc12": [
+   null,
+   null
+  ],
+  "A1": [
+   null,
+   null
+  ],
+  "abcd1": [
+   null,
+   null
+  ],
+  "abc1": [
+   "abc1",
+   null
+  ],
+  "12号": [
+   null,
+   null
+  ],
+  "拍了": [
+   null,
+   null
+  ],
+  "来一个7号": [
+   null,
+   null
+  ],
+  "42¥": [
+   null,
+   null
+  ],
+  "L": [
+   null,
+   null
+  ],
+  "XL": [
+   null,
+   null
+  ],
+  "12L": [
+   null,
+   null
+  ],
+  "8 XL": [
+   null,
+   null
+  ],
+  "hello": [
+   null,
+   null
+  ],
+  "0": [
+   null,
+   null
+  ],
+  "10": [
+   null,
+   null
+  ],
+  "50": [
+   null,
+   null
+  ]
+ },
+ "onlyKeyword": {
+  "1": [
+   null,
+   null
+  ],
+  "2": [
+   null,
+   null
+  ],
+  "3": [
+   null,
+   null
+  ],
+  "7": [
+   null,
+   null
+  ],
+  "12": [
+   null,
+   null
+  ],
+  "13": [
+   null,
+   null
+  ],
+  "99": [
+   null,
+   null
+  ],
+  "1234": [
+   null,
+   null
+  ],
+  "1.9": [
+   null,
+   null
+  ],
+  "12.5": [
+   null,
+   null
+  ],
+  "abc": [
+   null,
+   null
+  ],
+  "abc12": [
+   null,
+   null
+  ],
+  "A1": [
+   null,
+   null
+  ],
+  "abcd1": [
+   null,
+   null
+  ],
+  "abc1": [
+   null,
+   null
+  ],
+  "12号": [
+   null,
+   null
+  ],
+  "拍了": [
+   "拍了",
+   null
+  ],
+  "来一个7号": [
+   null,
+   null
+  ],
+  "42¥": [
+   null,
+   null
+  ],
+  "L": [
+   null,
+   null
+  ],
+  "XL": [
+   null,
+   null
+  ],
+  "12L": [
+   null,
+   null
+  ],
+  "8 XL": [
+   null,
+   null
+  ],
+  "hello": [
+   null,
+   null
+  ],
+  "0": [
+   null,
+   null
+  ],
+  "10": [
+   null,
+   null
+  ],
+  "50": [
+   null,
+   null
+  ]
+ },
+ "numberIncludeKeyword": {
+  "1": [
+   null,
+   null
+  ],
+  "2": [
+   null,
+   null
+  ],
+  "3": [
+   null,
+   null
+  ],
+  "7": [
+   null,
+   null
+  ],
+  "12": [
+   null,
+   null
+  ],
+  "13": [
+   null,
+   null
+  ],
+  "99": [
+   null,
+   null
+  ],
+  "1234": [
+   null,
+   null
+  ],
+  "1.9": [
+   null,
+   null
+  ],
+  "12.5": [
+   null,
+   null
+  ],
+  "abc": [
+   null,
+   null
+  ],
+  "abc12": [
+   null,
+   null
+  ],
+  "A1": [
+   null,
+   null
+  ],
+  "abcd1": [
+   null,
+   null
+  ],
+  "abc1": [
+   null,
+   null
+  ],
+  "12号": [
+   "12号",
+   null
+  ],
+  "拍了": [
+   null,
+   null
+  ],
+  "来一个7号": [
+   "来一个7号",
+   null
+  ],
+  "42¥": [
+   null,
+   null
+  ],
+  "L": [
+   null,
+   null
+  ],
+  "XL": [
+   null,
+   null
+  ],
+  "12L": [
+   null,
+   null
+  ],
+  "8 XL": [
+   null,
+   null
+  ],
+  "hello": [
+   null,
+   null
+  ],
+  "0": [
+   null,
+   null
+  ],
+  "10": [
+   null,
+   null
+  ],
+  "50": [
+   null,
+   null
+  ]
+ },
+ "grid": {
+  "1": [
+   "1",
+   1
+  ],
+  "2": [
+   "2",
+   2
+  ],
+  "3": [
+   "3",
+   3
+  ],
+  "7": [
+   "7",
+   7
+  ],
+  "12": [
+   "12",
+   12
+  ],
+  "13": [
+   null,
+   null
+  ],
+  "99": [
+   null,
+   null
+  ],
+  "1234": [
+   null,
+   null
+  ],
+  "1.9": [
+   null,
+   null
+  ],
+  "12.5": [
+   null,
+   null
+  ],
+  "abc": [
+   null,
+   null
+  ],
+  "abc12": [
+   null,
+   null
+  ],
+  "A1": [
+   null,
+   null
+  ],
+  "abcd1": [
+   null,
+   null
+  ],
+  "abc1": [
+   null,
+   null
+  ],
+  "12号": [
+   null,
+   null
+  ],
+  "拍了": [
+   null,
+   null
+  ],
+  "来一个7号": [
+   null,
+   null
+  ],
+  "42¥": [
+   null,
+   null
+  ],
+  "L": [
+   null,
+   null
+  ],
+  "XL": [
+   null,
+   null
+  ],
+  "12L": [
+   null,
+   null
+  ],
+  "8 XL": [
+   null,
+   null
+  ],
+  "hello": [
+   null,
+   null
+  ],
+  "0": [
+   null,
+   null
+  ],
+  "10": [
+   "10",
+   10
+  ],
+  "50": [
+   null,
+   null
+  ]
+ },
+ "gridAuto": {
+  "1": [
+   "1",
+   1
+  ],
+  "2": [
+   "2",
+   2
+  ],
+  "3": [
+   "3",
+   3
+  ],
+  "7": [
+   "7",
+   4
+  ],
+  "12": [
+   "12",
+   5
+  ],
+  "13": [
+   "13",
+   6
+  ],
+  "99": [
+   "99",
+   7
+  ],
+  "1234": [
+   "1234",
+   8
+  ],
+  "1.9": [
+   null,
+   null
+  ],
+  "12.5": [
+   null,
+   null
+  ],
+  "abc": [
+   null,
+   null
+  ],
+  "abc12": [
+   null,
+   null
+  ],
+  "A1": [
+   null,
+   null
+  ],
+  "abcd1": [
+   null,
+   null
+  ],
+  "abc1": [
+   null,
+   null
+  ],
+  "12号": [
+   null,
+   null
+  ],
+  "拍了": [
+   null,
+   null
+  ],
+  "来一个7号": [
+   null,
+   null
+  ],
+  "42¥": [
+   null,
+   null
+  ],
+  "L": [
+   null,
+   null
+  ],
+  "XL": [
+   null,
+   null
+  ],
+  "12L": [
+   null,
+   null
+  ],
+  "8 XL": [
+   null,
+   null
+  ],
+  "hello": [
+   null,
+   null
+  ],
+  "0": [
+   "0",
+   9
+  ],
+  "10": [
+   "10",
+   10
+  ],
+  "50": [
+   "50",
+   11
+  ]
+ },
+ "customSpecified": {
+  "1": [
+   "1",
+   null
+  ],
+  "2": [
+   "2",
+   null
+  ],
+  "3": [
+   "3",
+   null
+  ],
+  "7": [
+   null,
+   null
+  ],
+  "12": [
+   null,
+   null
+  ],
+  "13": [
+   null,
+   null
+  ],
+  "99": [
+   null,
+   null
+  ],
+  "1234": [
+   null,
+   null
+  ],
+  "1.9": [
+   null,
+   null
+  ],
+  "12.5": [
+   null,
+   null
+  ],
+  "abc": [
+   null,
+   null
+  ],
+  "abc12": [
+   null,
+   null
+  ],
+  "A1": [
+   "1",
+   null
+  ],
+  "abcd1": [
+   "1",
+   null
+  ],
+  "abc1": [
+   "1",
+   null
+  ],
+  "12号": [
+   null,
+   null
+  ],
+  "拍了": [
+   null,
+   null
+  ],
+  "来一个7号": [
+   null,
+   null
+  ],
+  "42¥": [
+   null,
+   null
+  ],
+  "L": [
+   null,
+   null
+  ],
+  "XL": [
+   null,
+   null
+  ],
+  "12L": [
+   null,
+   null
+  ],
+  "8 XL": [
+   null,
+   null
+  ],
+  "hello": [
+   null,
+   null
+  ],
+  "0": [
+   null,
+   null
+  ],
+  "10": [
+   null,
+   null
+  ],
+  "50": [
+   null,
+   null
+  ]
+ },
+ "customRange": {
+  "1": [
+   "1",
+   null
+  ],
+  "2": [
+   "2",
+   null
+  ],
+  "3": [
+   "3",
+   null
+  ],
+  "7": [
+   "7",
+   null
+  ],
+  "12": [
+   "12",
+   null
+  ],
+  "13": [
+   "13",
+   null
+  ],
+  "99": [
+   "99",
+   null
+  ],
+  "1234": [
+   "1234",
+   null
+  ],
+  "1.9": [
+   null,
+   null
+  ],
+  "12.5": [
+   null,
+   null
+  ],
+  "abc": [
+   null,
+   null
+  ],
+  "abc12": [
+   "12",
+   null
+  ],
+  "A1": [
+   "1",
+   null
+  ],
+  "abcd1": [
+   "1",
+   null
+  ],
+  "abc1": [
+   "1",
+   null
+  ],
+  "12号": [
+   "12",
+   null
+  ],
+  "拍了": [
+   null,
+   null
+  ],
+  "来一个7号": [
+   "7",
+   null
+  ],
+  "42¥": [
+   "42",
+   null
+  ],
+  "L": [
+   null,
+   null
+  ],
+  "XL": [
+   null,
+   null
+  ],
+  "12L": [
+   "12",
+   null
+  ],
+  "8 XL": [
+   "8",
+   null
+  ],
+  "hello": [
+   null,
+   null
+  ],
+  "0": [
+   "0",
+   null
+  ],
+  "10": [
+   "10",
+   null
+  ],
+  "50": [
+   "50",
+   null
+  ]
+ },
+ "customNumberWithKeyword": {
+  "1": [
+   null,
+   null
+  ],
+  "2": [
+   null,
+   null
+  ],
+  "3": [
+   null,
+   null
+  ],
+  "7": [
+   null,
+   null
+  ],
+  "12": [
+   null,
+   null
+  ],
+  "13": [
+   null,
+   null
+  ],
+  "99": [
+   null,
+   null
+  ],
+  "1234": [
+   null,
+   null
+  ],
+  "1.9": [
+   null,
+   null
+  ],
+  "12.5": [
+   null,
+   null
+  ],
+  "abc": [
+   null,
+   null
+  ],
+  "abc12": [
+   null,
+   null
+  ],
+  "A1": [
+   null,
+   null
+  ],
+  "abcd1": [
+   null,
+   null
+  ],
+  "abc1": [
+   null,
+   null
+  ],
+  "12号": [
+   "12",
+   null
+  ],
+  "拍了": [
+   null,
+   null
+  ],
+  "来一个7号": [
+   null,
+   null
+  ],
+  "42¥": [
+   null,
+   null
+  ],
+  "L": [
+   null,
+   null
+  ],
+  "XL": [
+   null,
+   null
+  ],
+  "12L": [
+   null,
+   null
+  ],
+  "8 XL": [
+   null,
+   null
+  ],
+  "hello": [
+   null,
+   null
+  ],
+  "0": [
+   null,
+   null
+  ],
+  "10": [
+   null,
+   null
+  ],
+  "50": [
+   null,
+   null
+  ]
+ },
+ "customFourDigit": {
+  "1": [
+   null,
+   null
+  ],
+  "2": [
+   null,
+   null
+  ],
+  "3": [
+   null,
+   null
+  ],
+  "7": [
+   null,
+   null
+  ],
+  "12": [
+   null,
+   null
+  ],
+  "13": [
+   null,
+   null
+  ],
+  "99": [
+   null,
+   null
+  ],
+  "1234": [
+   "1234",
+   null
+  ],
+  "1.9": [
+   null,
+   null
+  ],
+  "12.5": [
+   null,
+   null
+  ],
+  "abc": [
+   null,
+   null
+  ],
+  "abc12": [
+   null,
+   null
+  ],
+  "A1": [
+   null,
+   null
+  ],
+  "abcd1": [
+   null,
+   null
+  ],
+  "abc1": [
+   null,
+   null
+  ],
+  "12号": [
+   null,
+   null
+  ],
+  "拍了": [
+   null,
+   null
+  ],
+  "来一个7号": [
+   null,
+   null
+  ],
+  "42¥": [
+   null,
+   null
+  ],
+  "L": [
+   null,
+   null
+  ],
+  "XL": [
+   null,
+   null
+  ],
+  "12L": [
+   null,
+   null
+  ],
+  "8 XL": [
+   null,
+   null
+  ],
+  "hello": [
+   null,
+   null
+  ],
+  "0": [
+   null,
+   null
+  ],
+  "10": [
+   null,
+   null
+  ],
+  "50": [
+   null,
+   null
+  ]
+ },
+ "customSize": {
+  "1": [
+   null,
+   null
+  ],
+  "2": [
+   null,
+   null
+  ],
+  "3": [
+   null,
+   null
+  ],
+  "7": [
+   null,
+   null
+  ],
+  "12": [
+   null,
+   null
+  ],
+  "13": [
+   null,
+   null
+  ],
+  "99": [
+   null,
+   null
+  ],
+  "1234": [
+   null,
+   null
+  ],
+  "1.9": [
+   null,
+   null
+  ],
+  "12.5": [
+   null,
+   null
+  ],
+  "abc": [
+   null,
+   null
+  ],
+  "abc12": [
+   null,
+   null
+  ],
+  "A1": [
+   null,
+   null
+  ],
+  "abcd1": [
+   null,
+   null
+  ],
+  "abc1": [
+   null,
+   null
+  ],
+  "12号": [
+   null,
+   null
+  ],
+  "拍了": [
+   null,
+   null
+  ],
+  "来一个7号": [
+   null,
+   null
+  ],
+  "42¥": [
+   null,
+   null
+  ],
+  "L": [
+   null,
+   null
+  ],
+  "XL": [
+   null,
+   null
+  ],
+  "12L": [
+   "12",
+   null
+  ],
+  "8 XL": [
+   "8",
+   null
+  ],
+  "hello": [
+   null,
+   null
+  ],
+  "0": [
+   null,
+   null
+  ],
+  "10": [
+   null,
+   null
+  ],
+  "50": [
+   null,
+   null
+  ]
+ },
+ "customExclude12": {
+  "1": [
+   null,
+   null
+  ],
+  "2": [
+   null,
+   null
+  ],
+  "3": [
+   "3",
+   null
+  ],
+  "7": [
+   "7",
+   null
+  ],
+  "12": [
+   "12",
+   null
+  ],
+  "13": [
+   "13",
+   null
+  ],
+  "99": [
+   "99",
+   null
+  ],
+  "1234": [
+   "1234",
+   null
+  ],
+  "1.9": [
+   null,
+   null
+  ],
+  "12.5": [
+   null,
+   null
+  ],
+  "abc": [
+   null,
+   null
+  ],
+  "abc12": [
+   null,
+   null
+  ],
+  "A1": [
+   null,
+   null
+  ],
+  "abcd1": [
+   null,
+   null
+  ],
+  "abc1": [
+   null,
+   null
+  ],
+  "12号": [
+   null,
+   null
+  ],
+  "拍了": [
+   null,
+   null
+  ],
+  "来一个7号": [
+   null,
+   null
+  ],
+  "42¥": [
+   null,
+   null
+  ],
+  "L": [
+   null,
+   null
+  ],
+  "XL": [
+   null,
+   null
+  ],
+  "12L": [
+   null,
+   null
+  ],
+  "8 XL": [
+   null,
+   null
+  ],
+  "hello": [
+   null,
+   null
+  ],
+  "0": [
+   "0",
+   null
+  ],
+  "10": [
+   "10",
+   null
+  ],
+  "50": [
+   "50",
+   null
+  ]
+ },
+ "customPureNumberDecimal": {
+  "1": [
+   "1",
+   null
+  ],
+  "2": [
+   "2",
+   null
+  ],
+  "3": [
+   "3",
+   null
+  ],
+  "7": [
+   "7",
+   null
+  ],
+  "12": [
+   "12",
+   null
+  ],
+  "13": [
+   "13",
+   null
+  ],
+  "99": [
+   "99",
+   null
+  ],
+  "1234": [
+   "1234",
+   null
+  ],
+  "1.9": [
+   "1.9",
+   null
+  ],
+  "12.5": [
+   "12.5",
+   null
+  ],
+  "abc": [
+   null,
+   null
+  ],
+  "abc12": [
+   null,
+   null
+  ],
+  "A1": [
+   null,
+   null
+  ],
+  "abcd1": [
+   null,
+   null
+  ],
+  "abc1": [
+   null,
+   null
+  ],
+  "12号": [
+   null,
+   null
+  ],
+  "拍了": [
+   null,
+   null
+  ],
+  "来一个7号": [
+   null,
+   null
+  ],
+  "42¥": [
+   null,
+   null
+  ],
+  "L": [
+   null,
+   null
+  ],
+  "XL": [
+   null,
+   null
+  ],
+  "12L": [
+   null,
+   null
+  ],
+  "8 XL": [
+   null,
+   null
+  ],
+  "hello": [
+   null,
+   null
+  ],
+  "0": [
+   "0",
+   null
+  ],
+  "10": [
+   "10",
+   null
+  ],
+  "50": [
+   "50",
+   null
+  ]
+ }
+}

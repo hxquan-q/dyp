@@ -110,8 +110,26 @@ backend-dist\koudanbao-backend.exe --host 127.0.0.1 --port 8787   # Rust 版（�
 ### ✅ 已完成
 - **M1 仓库基建（2026-08-06）**：git init + GitHub remote (hxquan-q/dyp)；逆向产物归档 `legacy/`
   （gitignore，不进版本库）；运行资源收拢 `backend-rs/`（assets 部署产物/static/default_custom_config.json）；
-  `build-backend.ps1` 资源源改 backend-rs；`electron/main.js` dev 回退改 backend-dist 产物（去 Python）；
-  `resolve_res_dir()` 清理失效候选（cargo check 通过）。
+  `build-backend.mjs` 跨平台构建（替代 ps1，前端产物自动同步+排除 sourcemap）；
+  `electron/main.js` dev 回退改 backend-dist 产物；`resolve_res_dir()` 清理失效候选。
+- **M2 主进程真实能力**：`electron/main/electron-print.js`（ElectronPrintService 自研：
+  打印队列/打印窗口+preload 桥/webContents.print 系统打印跨平台/PDF 预览/labels 校验）；
+  `electron/main/douyin-live-driver.js`（DouyinLiveDriver：直播间窗口+CDP 拦截→
+  DanmakuDispatcher→display/resolved/printResults 事件桥）；main.js 打印 IPC 走真实服务、
+  danmaku:startSession 抖音真实弹幕优先（roomUrl 弹窗收集+记忆 userData/douyin-room-urls.json）+
+  mock 兜底；KDB_SMOKE_TEST 冒烟模式。reconstructed 模块回归 electron/main/（测试路径恢复）。
+- **M3 跨平台构建**：electron-builder 双平台（mac dmg/zip + win nsis/portable），
+  extraResources 打包 backend-dist → resources/backend；`.github/workflows/build.yml`
+  matrix（win/macos-13 x64/macos-14 arm64）双平台 CI 出包（本地阶段不签名不公证）。
+- **M4 前端收敛（基线）**：统一投放（移除 KOUDANBAO_FRONTEND=recon）；preset-templates.ts
+  （114KB 单行）→ preset-templates.json；Vitest 基线（danmaku-state 13 项）。
+  ⏳ 后续：拆 2503 行 Index.tsx / 1855 行 reverse-runtime.ts、zustand、组件测试（需测试保护后做）。
+- **M5a auth.mode 机制**：`--auth-mode local|cloud`（默认 local）；local 强制零门槛自动登录；
+  cloud 可 `--no-auto-login` 开启登录门；base_props 注入 `authMode`；前端 local 显示"本地版"
+  徽章 + 隐藏订购/退出，cloud 自动恢复登录流（前端零改动切换）。
+- **M6a 引擎 golden 基线**：`test-engine-parity.py` 支持 `--dump-golden` / `--golden`；
+  固化 `tests/engine-golden.json`（16 规则 432 项）；并入 test-backend-protocol.ps1
+  （69 协议 + 432 golden 联合验证）。
 - **后端 Python → Rust 迁移**：契约逐字节等价。验证：69/69 协议测试、引擎差分 432 项 0 差异、
   21 项 Rust 单测、Inertia 渲染保真。
 - **P0-1** 持久化并发安全（Mutex + 原子写，消除读-改-写竞态）。
@@ -119,19 +137,15 @@ backend-dist\koudanbao-backend.exe --host 127.0.0.1 --port 8787   # Rust 版（�
   sync_failures/failed_count/has_more/lock_skipped）。
 - **P2-9** 运行时字节补丁 → 构建期 `tools/patch-bundle.js`。
 - **P1-3** 后端模块化（handlers/electron/engine/shops/templates/store...）。
-- 新增 `tests/test-engine-parity.py`（双后端差分）与 `tools/extract-shell.py`（shell 模板抽取）。
 
 ### ⏳ 待办（按依赖序）
-0. **M2** 主进程真实能力：ElectronPrint 系统打印实现 + 抖音真实弹幕集成
-   （素材在 `legacy/main-process-reverse/*.reconstructed.js`）。
-1. **B1** 契约源 + TS 类型生成（P2-7，根治字段漂移；P0-2 为验证用例）。
-2. **C1-C3** 前端工程化：拆 `frontend-src/src/Pages/Deduction/Index.tsx`（2503 行）、
-   `lib/reverse-runtime.ts`（1855 行）→ 命名模块、`lib/preset-templates.ts`（114KB 单行）→ JSON、
-   zustand 弹幕会话状态、Vitest + Testing Library 组件测试。
+1. **B1** 契约源 + TS 类型生成（P2-7，根治字段漂移；auth.mode 契约为 M5a 已固化雏形）。
+2. **M4 续** 拆 2503 行 `Deduction/Index.tsx`、1855 行 `reverse-runtime.ts` → 命名模块、
+   zustand 弹幕会话状态、组件级测试（需先有 Vitest 组件测试保护）。
 3. **D1** Electron 拉起 Rust 后端端到端验证 + order-sync 链路（可用 `$env:KDB_BACKEND_EXE` 指
    向 backend-dist exe 在 dev 模式测试）。
-4. **E1** ~~Python backend 归档切换~~ ✅ 已完成（归档 legacy/backend-python）；verify-reconstruction.py 已更新。
-5. **M3** 跨平台构建：electron-builder 双平台 + Rust mac 编译 + GitHub Actions CI。
+4. **M3 续** mac 真机验证（dmg 安装/登录/弹幕/打印）；商业化前接 Apple 公证 + Windows 签名 + 更新通道。
+5. **M5b** `/api/auth/*` 契约（login/register/logout/me）在 cloud 模式的完整实现（未来接云）。
 
 ## 八、已知坑（踩过）
 

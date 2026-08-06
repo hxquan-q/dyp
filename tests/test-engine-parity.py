@@ -67,16 +67,47 @@ def run_rules(base):
                    {"shop_id": int(SHOP_ID), "messages": msgs})
         results = {}
         for row in resp.get("displayItems", []):
-            results[row["content"]] = (row.get("matched_content"), row.get("grid_no"))
+            # 用 list 而非 tuple：JSON golden 序列化后类型一致
+            results[row["content"]] = [row.get("matched_content"), row.get("grid_no")]
         out[item["name"]] = results
     return out
 
 
 def main():
-    if len(sys.argv) < 3:
+    args = sys.argv[1:]
+
+    # ── golden dump：跑单个后端，固化期望结果 ──
+    if len(args) >= 2 and args[0] == '--dump-golden':
+        rs_base, golden_path = args[1], args[2]
+        rs = run_rules(rs_base)
+        with open(golden_path, "w", encoding="utf-8") as f:
+            json.dump(rs, f, ensure_ascii=False, indent=1)
+        print(f"[golden] 已固化 {len(rs)} 规则 → {golden_path}")
+        return 0
+
+    # ── golden verify：跑单个后端，与固化期望比对 ──
+    if len(args) >= 2 and args[0] == '--golden':
+        golden_path, rs_base = args[1], args[2]
+        with open(golden_path, "r", encoding="utf-8") as f:
+            golden = json.load(f)
+        rs = run_rules(rs_base)
+        total = diffs = 0
+        for rule_name, g_map in golden.items():
+            rs_map = rs.get(rule_name, {})
+            for content in sorted(set(g_map) | set(rs_map)):
+                total += 1
+                if g_map.get(content) != rs_map.get(content):
+                    diffs += 1
+                    print(f"[DIFF] {rule_name:<22} content={content!r:<10} "
+                          f"golden={g_map.get(content)} Rust={rs_map.get(content)}")
+        print(f"=== golden 校验: {total} 项比对, {diffs} 项差异 ===")
+        return 1 if diffs else 0
+
+    # ── 双后端差分（Python 已归档 legacy/backend-python，可选对照）──
+    if len(args) < 2:
         print(__doc__)
         return 2
-    py_base, rs_base = sys.argv[1], sys.argv[2]
+    py_base, rs_base = args[0], args[1]
     print(f"Python: {py_base}\nRust  : {rs_base}\n")
     py = run_rules(py_base)
     rs = run_rules(rs_base)
