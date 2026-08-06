@@ -1,0 +1,72 @@
+# 扣单宝 双平台构建流水线（Windows + macOS）
+# ==================================================================
+# matrix：
+#   windows-latest  → nsis + portable（x64）
+#   macos-13        → dmg + zip（Intel x64）
+#   macos-14        → dmg + zip（Apple Silicon arm64）
+# 说明：
+#   - 本地阶段不签名不公证（mac Gatekeeper / win SmartScreen 由用户手动放行）
+#   - 商业化前接入：Apple Developer 公证 + Windows 代码签名证书 + 发布 Release
+name: build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            electron_args: --win
+          - os: macos-13
+            electron_args: --mac --x64
+          - os: macos-14
+            electron_args: --mac --arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npm --prefix frontend-src install
+          npm --prefix electron install
+
+      - name: Typecheck frontend
+        run: npm run typecheck
+
+      - name: Build frontend
+        run: npm run build:frontend
+
+      - name: Build backend (Rust + assets)
+        run: npm run build:backend
+
+      - name: Package (electron-builder)
+        working-directory: electron
+        run: npx electron-builder ${{ matrix.electron_args }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: koudanbao-${{ matrix.os }}
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.zip
+            dist/*.yml
+            dist/*.blockmap
+          if-no-files-found: error

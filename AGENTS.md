@@ -62,7 +62,7 @@ E:\dyp\
 ├── tests/               # 协议测试/引擎差分/JS 逻辑测试
 ├── docs/                # 架构/前端/主进程导读 + REVERSE-GAP-INVENTORY.md
 ├── tools/               # 生产工具（patch-bundle.js / verify-reconstruction.py / extract-shell.py）
-├── scripts/             # build-backend.ps1 / test-backend-protocol.ps1
+├── scripts/             # build-backend.mjs / test-backend-protocol.ps1
 └── legacy/              # ★ 逆向归档（gitignore，不进版本库）
     ├── backend-python/      # Python 参考实现（完整可运行，差分/契约参考）
     ├── official-bundle/     # 官方原版前端 bundle 对照（版权产物）
@@ -78,7 +78,7 @@ E:\dyp\
 npm install                     # 三处依赖（root/frontend-src/electron）
 npm test                        # 全量：typecheck + 后端协议 + 引擎 + JS 逻辑
 npm run build:frontend          # vite build → frontend-src/dist
-npm run build:backend           # scripts/build-backend.ps1 → cargo release + 资源打包
+npm run build:backend           # node scripts/build-backend.mjs → cargo release + 资源打包（跨平台）
 npm run package                 # 前端 + 后端 + electron-builder 打包
 cd backend-rs; cargo test       # Rust 21 项单测
 python tests/test_backend_protocol.py http://127.0.0.1:8787   # 69 项协议测试（语言无关）

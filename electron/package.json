@@ -24,7 +24,9 @@
     "start": "electron .",
     "package": "electron-builder --win",
     "package:dir": "electron-builder --win dir",
-    "package:portable": "electron-builder --win portable"
+    "package:portable": "electron-builder --win portable",
+    "package:mac": "electron-builder --mac",
+    "package:mac:dir": "electron-builder --mac dir"
   },
   "devDependencies": {
     "electron-builder": "^26.0.0",
@@ -45,8 +47,8 @@
     ],
     "extraResources": [
       {
-        "from": "../backend-dist/koudanbao-backend.exe",
-        "to": "backend/koudanbao-backend.exe"
+        "from": "../backend-dist",
+        "to": "backend"
       }
     ],
     "win": {
@@ -61,6 +63,14 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "resources/app-icon.png",
+      "category": "public.app-category.productivity"
     }
   },
   "author": "扣单宝本地重建"

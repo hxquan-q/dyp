@@ -72,7 +72,7 @@ E:\dyp\
 ├── backend-dist/            # 构建产物（gitignore）：koudanbao-backend.exe + 资源
 ├── tests/                   # 协议测试(69)/引擎差分(432)/JS 逻辑测试
 ├── docs/                    # 架构/前端/主进程导读 + 逆向缺口清单
-├── scripts/                 # build-backend.ps1 / test-backend-protocol.ps1
+├── scripts/                 # build-backend.mjs / test-backend-protocol.ps1
 ├── tools/                   # 生产工具（patch-bundle.js/verify-reconstruction.py/extract-shell.py）
 └── legacy/                  # ★ 逆向归档（gitignore，不进版本库）
     ├── backend-python/      #   Python 参考后端（完整可运行，差分对照用）
