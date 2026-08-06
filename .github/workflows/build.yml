@@ -58,6 +58,9 @@ jobs:
         run: npm run build:backend
 
       - name: Test (typecheck + 69 协议 + 432 golden + 引擎/调度/打印/前端 Vitest)
+        # PYTHONIOENCODING: CI runner 为 en-US（cp1252），Python 打印中文需强制 UTF-8
+        env:
+          PYTHONIOENCODING: utf-8
         run: npm test
 
       - name: Package (electron-builder)

@@ -9,6 +9,13 @@ import sys
 import urllib.request
 import urllib.error
 
+# CI runner（en-US, cp1252）打印中文会 UnicodeEncodeError → 强制 UTF-8 输出
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8787"
 PASS = 0
 FAIL = 0

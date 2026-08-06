@@ -11,6 +11,13 @@ DeductionEngine 行为一致性测试
 import os
 import sys
 
+# CI runner（en-US, cp1252）打印中文会 UnicodeEncodeError → 强制 UTF-8 输出
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 _LEGACY_DIR = os.path.join(os.path.dirname(__file__), "..", "legacy", "backend-python")
 if not os.path.isdir(_LEGACY_DIR):
     print("SKIP test_deduction_engine: legacy/backend-python 归档未检出（CI 无 legacy/，引擎行为由 Rust 21 单测 + 432 golden 覆盖）")

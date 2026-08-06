@@ -12,6 +12,13 @@ import json
 import sys
 import urllib.request
 
+# CI runner（en-US, cp1252）打印中文会 UnicodeEncodeError → 强制 UTF-8 输出
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 CORPUS = [
     "1", "2", "3", "7", "12", "13", "99", "1234", "1.9", "12.5",
     "abc", "abc12", "A1", "abcd1", "abc1", "12号", "拍了", "来一个7号",
