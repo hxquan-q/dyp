@@ -176,3 +176,7 @@ backend-dist\koudanbao-backend.exe --host 127.0.0.1 --port 8787   # Rust 版（�
 - **前端 lint 噪音源**：重建代码含大量未用导入/压缩名参数（tsconfig 刻意 `noUnusedLocals:false`）；
   oxlint 基线把 `no-unused-vars`/`no-unused-expressions` 等降为 warn、正确性类别保持 error 门禁，
   M4续 拆分时逐文件清零。
+- **CI runner 上 Python 打印中文崩溃**：GitHub windows runner 是 en-US（cp1252），本地 zh-CN（cp936）
+  正常；Python 脚本 print 中文 → `UnicodeEncodeError: 'charmap' codec`。修复：4 个测试脚本顶部
+  `sys.stdout/stderr.reconfigure(encoding='utf-8')` + CI Test 步骤 `PYTHONIOENCODING=utf-8` 双保险。
+  新增 Python 测试脚本必须带上该引导块。
